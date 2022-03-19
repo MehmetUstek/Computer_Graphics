@@ -49,5 +49,8 @@
     <ClCompile Include="objectType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="movement.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

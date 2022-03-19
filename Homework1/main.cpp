@@ -181,7 +181,7 @@ void reshape( int w, int h )
 void
 idle( void )
 {
-    Theta[Axis] += 10.0;
+    Theta[Axis] += 0.2;
 
     if ( Theta[Axis] > 360.0 ) {
         Theta[Axis] -= 360.0;
