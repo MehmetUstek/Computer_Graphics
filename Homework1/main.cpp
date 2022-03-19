@@ -4,15 +4,19 @@
 
 #include "Angel.h"
 #include "objectType.cpp"
+#include "movement.cpp"
 
 bool isSolid = true;
 ObjectType object_type = ObjectType::CUBE;
-
-
+// Window sizes:
+GLsizei width = 1024;
+GLsizei height = 760;
+ObjectLocation movement;
 
 typedef vec4  color4;
 typedef vec4  point4;
 color4 color;
+GLuint vao[2];
 
 
 const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
@@ -55,6 +59,10 @@ GLuint  ModelView, Projection;
 void
 init()
 {
+    movement.initObjectLocation(0.0,0.0, 0.2, 0);
+    
+
+
     // Create a vertex array object
     GLuint vao;
     glGenVertexArrays( 1, &vao );
@@ -130,7 +138,7 @@ display( void )
 
     //  Generate tha model-view matrix
     // Initial translation for putting into the view.
-    const vec3 displacement( 0.0, 0.0, 0.0 );
+    const vec3 displacement( movement.locX, movement.locY, 0.0 );
     mat4 model_view = ( Translate( displacement ) * Scale(1.0, 1.0, 1.0) *
              RotateX( Theta[Xaxis] ) *
              RotateY( Theta[Yaxis] ) *
@@ -139,16 +147,24 @@ display( void )
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
     
     // Solid
+    
+    switch (object_type) {
+
+    case ObjectType::SPHERE:
+
+        glBindVertexArray(buffers[0]);
+        break;
+        
+    }
+
     if (isSolid) {
         glDrawElements(GL_TRIANGLES, NumVertices, GL_UNSIGNED_INT, 0);
-
     }
     // Wireframe
     else {
         glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
     }
-    
-    
+
     glutSwapBuffers();
     
 }
@@ -198,6 +214,9 @@ keyboard( unsigned char key,int x, int y )
     switch (key) {
     case 'q': case 'Q':
         exit(EXIT_SUCCESS);
+        break;
+    case 'i': case 'I':
+        movement.initObjectLocation(0.0, 0.0, 0.2, 0);
         break;
     case 'd': case 'D':
         isSolid = !isSolid; // Change the wireframe or solid by pressing to d.
@@ -278,7 +297,7 @@ main( int argc, char **argv )
 {
     glutInit( &argc, argv );
     glutInitDisplayMode(  GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-    glutInitWindowSize( 512, 512 );
+    glutInitWindowSize( width, height );
     glutInitWindowPosition( 50, 50 );
     glutCreateWindow( "Bouncing Objects" );
     
