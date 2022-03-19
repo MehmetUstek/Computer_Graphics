@@ -15,7 +15,7 @@ ObjectLocation movement;
 
 typedef vec4  color4;
 typedef vec4  point4;
-color4 color;
+color4 color = color4(0.0, 0.0, 0.0, 1.0);  // black
 GLuint vao[2];
 
 
@@ -35,15 +35,17 @@ point4 points[8] = {
 
 // RGBA colors
 color4 colors[8] = {
-    color4( 0.0, 0.0, 0.0, 1.0 ),  // black
-    color4( 1.0, 0.0, 0.0, 1.0 ),  // red
-    color4( 1.0, 1.0, 0.0, 1.0 ),  // yellow
-    color4( 0.0, 1.0, 0.0, 1.0 ),  // green
-    color4( 0.0, 0.0, 1.0, 1.0 ),  // blue
-    color4( 1.0, 0.0, 1.0, 1.0 ),  // magenta
-    color4( 1.0, 1.0, 1.0, 1.0 ),  // white
-    color4( 0.0, 1.0, 1.0, 1.0 )   // cyan
+    color, 
+    color, 
+    color, 
+    color, 
+    color, 
+    color, 
+    color, 
+    color, 
 };
+
+
 
 // Array of rotation angles (in degrees) for each coordinate axis
 enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
@@ -59,8 +61,7 @@ GLuint  ModelView, Projection;
 void
 init()
 {
-    movement.initObjectLocation(-1.0,0.0, 0.001, 0.0);
-    
+    movement.initObjectLocation(-1.0 + 0.3, 0.5, 0.001, -0.001);
 
     glGenVertexArrays( 2, vao );
     glBindVertexArray( vao[0] );
@@ -161,7 +162,10 @@ display( void )
     else {
         glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
     }
-
+    for (int i = 0; i < 8; i++) {
+        colors[i] = color;
+    }
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points), sizeof(colors), colors);
     glutSwapBuffers();
     
 }
@@ -213,7 +217,7 @@ keyboard( unsigned char key,int x, int y )
         exit(EXIT_SUCCESS);
         break;
     case 'i': case 'I':
-        movement.initObjectLocation(0.0, 0.0, 0.001, -0.001);
+        movement.initObjectLocation(-1.0 + 0.3, 0.5, 0.001, -0.001);
         break;
     case 'd': case 'D':
         isSolid = !isSolid; // Change the wireframe or solid by pressing to d.

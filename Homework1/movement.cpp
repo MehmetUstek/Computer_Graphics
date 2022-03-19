@@ -14,23 +14,18 @@ struct ObjectLocation {
 	}
 
 	void updateObjectLocation(GLfloat radiusX, GLfloat radiusY) {
-        GLsizei width = 512;
-        GLsizei height = 380;
+        
 
-        // y-axis floor collision check
-        if (locY <= -1 + radiusY) {
-            velocityY *= -1;
-            velocityX *= 0.8;
-
+        if ((locY >= 1 - radiusY || locY <= -1 + radiusY)) {
+            velocityY *= -1.0;
         }
 
-        // x-axis wall collision check
         if ((locX >= 1 - radiusX || locX <= -1 + radiusX)) {
             velocityX *= -1.0;
         }
 
         locX += velocityX;
-        locY += velocityY * radiusY;
+        locY += velocityY;
 
         
 	}
