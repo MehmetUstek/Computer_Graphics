@@ -9,7 +9,7 @@
 bool isSolid = true;
 ObjectType object_type = ObjectType::CUBE;
 // Window sizes:
-GLsizei width = 1024;
+GLsizei width = 760;
 GLsizei height = 760;
 ObjectLocation movement;
 
@@ -23,14 +23,14 @@ const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
 // Vertices of a unit cube centered at origin, sides aligned with axes
 point4 points[8] = {
-    point4( -0.5, -0.5,  0.5, 1.0 ),
-    point4( -0.5,  0.5,  0.5, 1.0 ),
-    point4(  0.5,  0.5,  0.5, 1.0 ),
-    point4(  0.5, -0.5,  0.5, 1.0 ),
-    point4( -0.5, -0.5, -0.5, 1.0 ),
-    point4( -0.5,  0.5, -0.5, 1.0 ),
-    point4(  0.5,  0.5, -0.5, 1.0 ),
-    point4(  0.5, -0.5, -0.5, 1.0 )
+    point4( -0.2, -0.2,  0.2, 1.0 ),
+    point4( -0.2,  0.2,  0.2, 1.0 ),
+    point4(  0.2,  0.2,  0.2, 1.0 ),
+    point4(  0.2, -0.2,  0.2, 1.0 ),
+    point4( -0.2, -0.2, -0.2, 1.0 ),
+    point4( -0.2,  0.2, -0.2, 1.0 ),
+    point4(  0.2,  0.2, -0.2, 1.0 ),
+    point4(  0.2, -0.2, -0.2, 1.0 )
 };
 
 // RGBA colors
@@ -59,14 +59,11 @@ GLuint  ModelView, Projection;
 void
 init()
 {
-    movement.initObjectLocation(0.0,0.0, 0.2, 0);
+    movement.initObjectLocation(-1.0,0.0, 0.001, 0.0);
     
 
-
-    // Create a vertex array object
-    GLuint vao;
-    glGenVertexArrays( 1, &vao );
-    glBindVertexArray( vao );
+    glGenVertexArrays( 2, vao );
+    glBindVertexArray( vao[0] );
 
     // Create and initialize a vertex buffer object
     GLuint buffer;
@@ -150,9 +147,9 @@ display( void )
     
     switch (object_type) {
 
-    case ObjectType::SPHERE:
+    case ObjectType::CUBE:
 
-        glBindVertexArray(buffers[0]);
+        glBindVertexArray(vao[0]);
         break;
         
     }
@@ -216,7 +213,7 @@ keyboard( unsigned char key,int x, int y )
         exit(EXIT_SUCCESS);
         break;
     case 'i': case 'I':
-        movement.initObjectLocation(0.0, 0.0, 0.2, 0);
+        movement.initObjectLocation(0.0, 0.0, 0.001, -0.001);
         break;
     case 'd': case 'D':
         isSolid = !isSolid; // Change the wireframe or solid by pressing to d.
@@ -273,20 +270,22 @@ void mouse( int button, int state, int x, int y )
 //----------------------------------------------------------------------------
 void timer( int p )
 {
-    Theta[Axis] += 1.0;
+    /*Theta[Axis] += 1.0;
     if ( Theta[Axis] > 360.0 ) {
         Theta[Axis] -= 360.0;
-    }
-    const vec3 displacement(1, 0.0, 0.0);
+    }*/
+    movement.updateObjectLocation(0.2,0.2);
+    /*const vec3 displacement(1, 0.0, 0.0);
     mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
         RotateX(Theta[Xaxis]) *
         RotateY(Theta[Yaxis]) *
-        RotateZ(Theta[Zaxis]));
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view);
+        RotateZ(Theta[Zaxis]));*/
+
+    //glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view);
 
     glutPostRedisplay();
     
-    glutTimerFunc(20,timer,0);
+    glutTimerFunc(2,timer,0);
 }
 
 
