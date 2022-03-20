@@ -191,6 +191,12 @@ init()
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
         sizeof(colors_sphere), colors_sphere);
+
+    /*GLuint index_buffer_sphere;
+    glGenBuffers(1, &index_buffer_sphere);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_sphere);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(v), v, GL_STATIC_DRAW);*/
+
     
     glEnableVertexAttribArray(vPosition);
     glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
@@ -216,7 +222,7 @@ init()
     glEnable( GL_DEPTH_TEST );
     
     // Set state variable "clear color" to clear buffer with.
-    glClearColor( 1.0, 1.0, 1.0, 1.0 );
+    glClearColor( 0.0, 1.0, 1.0, 1.0 );
    }
 
 //----------------------------------------------------------------------------
@@ -249,20 +255,39 @@ display( void )
         glBufferData(GL_ARRAY_BUFFER, sizeof(points) + sizeof(colors), NULL, GL_STATIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points), points);
         glBufferSubData(GL_ARRAY_BUFFER, sizeof(points), sizeof(colors), colors);
+        if (isSolid) {
+            glDrawElements(GL_TRIANGLES, NumVertices, GL_UNSIGNED_INT, 0);
+        }
+        // Wireframe
+        else {
+            glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
+        }
         break;
     case ObjectType::SPHERE:
+        for (int i = 0; i < NumVertices_sphere; i++) {
+            colors_sphere[i] = color;
+        }
         glBindVertexArray(vao[1]);
+        GLuint buffer_sphere;
+        glGenBuffers(1, &buffer_sphere);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(colors_sphere),
+            NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
+        glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
+            sizeof(colors_sphere), colors_sphere);
+        if (isSolid) {
+            glDrawArrays(GL_TRIANGLES, 0, NumVertices_sphere);
+        }
+        // Wireframe
+        else {
+            glDrawArrays(GL_LINE_LOOP, 0, NumVertices_sphere);
+        }
         break;
         
     }
 
-    if (isSolid) {
-        glDrawElements(GL_TRIANGLES, NumVertices, GL_UNSIGNED_INT, 0);
-    }
-    // Wireframe
-    else {
-        glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
-    }
+    
     
     glutSwapBuffers();
     
