@@ -11,12 +11,82 @@ ObjectType object_type = ObjectType::CUBE;
 // Window sizes:
 GLsizei width = 760;
 GLsizei height = 760;
-ObjectLocation movement;
+ObjectLocation objectLocation;
+GLuint buffer;
+
+
 
 typedef vec4  color4;
 typedef vec4  point4;
 color4 color = color4(0.0, 0.0, 0.0, 1.0);  // black
-GLuint vao[2];
+GLuint vao[3];
+
+//Sphere
+const int NumTimesToSubdivide = 5;
+const int NumTriangles = 4096;
+// (4 faces)^(NumTimesToSubdivide + 1)
+const int NumVertices_sphere = 3 * NumTriangles;
+typedef Angel::vec4 point4;
+typedef Angel::vec4 color4;
+point4 points_sphere[NumVertices_sphere];
+color4 colors_sphere[NumVertices_sphere];
+int Index_sphere = 0;
+
+void
+triangle_sphere(const point4& a, const point4& b, const point4& c)
+{
+    colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = a; Index_sphere++;
+    colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = b; Index_sphere++;
+    colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = c; Index_sphere++;
+}
+
+point4
+unit_sphere(const point4& p)
+{
+    float len = p.x * p.x + p.y * p.y + p.z * p.z;
+    point4 t;
+    if (len > DivideByZeroTolerance) {
+        t = p / sqrt(len);
+        t.w = 1.0;
+    }
+    return t;
+}
+
+void
+divide_triangle_sphere(const point4& a, const point4& b,
+    const point4& c, int count)
+{
+    if (count > 0) {
+        point4 v1 = unit_sphere(a + b);
+        point4 v2 = unit_sphere(a + c);
+        point4 v3 = unit_sphere(b + c);
+        divide_triangle_sphere(a, v1, v2, count - 1);
+        divide_triangle_sphere(c, v2, v3, count - 1);
+        divide_triangle_sphere(b, v3, v1, count - 1);
+        divide_triangle_sphere(v1, v3, v2, count - 1);
+    }
+    else {
+        triangle_sphere(a, b, c);
+    }
+}
+
+void
+tetrahedron_sphere(int count)
+{
+    point4 v[4] = {
+    vec4(0.0, 0.0, 1.0, 1.0),
+    vec4(0.0, 0.942809, -0.333333, 1.0),
+    vec4(-0.816497, -0.471405, -0.333333, 1.0),
+    vec4(0.816497, -0.471405, -0.333333, 1.0)
+    };
+    divide_triangle_sphere(v[0], v[1], v[2], count);
+    divide_triangle_sphere(v[3], v[2], v[1], count);
+    divide_triangle_sphere(v[0], v[3], v[1], count);
+    divide_triangle_sphere(v[0], v[2], v[3], count);
+}
+
+
+
 
 
 const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
@@ -61,13 +131,17 @@ GLuint  ModelView, Projection;
 void
 init()
 {
-    movement.initObjectLocation(-1.0 + 0.3, 0.5, 0.001, -0.001);
+    tetrahedron_sphere(NumTimesToSubdivide);
+    
+    objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, 0.001, -0.001);
 
-    glGenVertexArrays( 2, vao );
+    glGenVertexArrays( 3, vao );
     glBindVertexArray( vao[0] );
+    GLuint program = InitShader("vshader.glsl", "fshader.glsl");
+
 
     // Create and initialize a vertex buffer object
-    GLuint buffer;
+    
     glGenBuffers( 1, &buffer );
     glBindBuffer( GL_ARRAY_BUFFER, buffer );
     glBufferData( GL_ARRAY_BUFFER, sizeof(points) + sizeof(colors), NULL, GL_STATIC_DRAW );
@@ -95,9 +169,8 @@ init()
     glGenBuffers(1, &index_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cube_indices), cube_indices, GL_STATIC_DRAW);
-    
+
     // Load shaders and use the resulting shader program
-    GLuint program = InitShader( "vshader.glsl", "fshader.glsl" );
     
     // set up vertex arrays
     GLuint vPosition = glGetAttribLocation( program, "vPosition" );
@@ -108,6 +181,25 @@ init()
     glEnableVertexAttribArray( vColor );
     glVertexAttribPointer( vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points)) );
     
+    // Sphere
+    glBindVertexArray(vao[1]);
+    GLuint buffer_sphere;
+    glGenBuffers(1, &buffer_sphere);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(colors_sphere),
+        NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
+        sizeof(colors_sphere), colors_sphere);
+    
+    glEnableVertexAttribArray(vPosition);
+    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
+    GLuint vColor_sphere = glGetAttribLocation(program, "vColor");
+    glEnableVertexAttribArray(vColor_sphere);
+    glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
+
+
     // Retrieve transformation uniform variable locations
     ModelView = glGetUniformLocation( program, "ModelView" );
     Projection = glGetUniformLocation( program, "Projection" );
@@ -136,7 +228,7 @@ display( void )
 
     //  Generate tha model-view matrix
     // Initial translation for putting into the view.
-    const vec3 displacement( movement.locX, movement.locY, 0.0 );
+    const vec3 displacement( objectLocation.locX, objectLocation.locY, 0.0 );
     mat4 model_view = ( Translate( displacement ) * Scale(1.0, 1.0, 1.0) *
              RotateX( Theta[Xaxis] ) *
              RotateY( Theta[Yaxis] ) *
@@ -149,8 +241,17 @@ display( void )
     switch (object_type) {
 
     case ObjectType::CUBE:
-
+        for (int i = 0; i < 8; i++) {
+            colors[i] = color;
+        }
         glBindVertexArray(vao[0]);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(points) + sizeof(colors), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points), points);
+        glBufferSubData(GL_ARRAY_BUFFER, sizeof(points), sizeof(colors), colors);
+        break;
+    case ObjectType::SPHERE:
+        glBindVertexArray(vao[1]);
         break;
         
     }
@@ -162,10 +263,7 @@ display( void )
     else {
         glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
     }
-    for (int i = 0; i < 8; i++) {
-        colors[i] = color;
-    }
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points), sizeof(colors), colors);
+    
     glutSwapBuffers();
     
 }
@@ -217,7 +315,7 @@ keyboard( unsigned char key,int x, int y )
         exit(EXIT_SUCCESS);
         break;
     case 'i': case 'I':
-        movement.initObjectLocation(-1.0 + 0.3, 0.5, 0.001, -0.001);
+        objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, 0.001, -0.001);
         break;
     case 'd': case 'D':
         isSolid = !isSolid; // Change the wireframe or solid by pressing to d.
@@ -278,7 +376,7 @@ void timer( int p )
     if ( Theta[Axis] > 360.0 ) {
         Theta[Axis] -= 360.0;
     }*/
-    movement.updateObjectLocation(0.2,0.2);
+    objectLocation.updateObjectLocation(0.2,0.2);
     /*const vec3 displacement(1, 0.0, 0.0);
     mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
         RotateX(Theta[Xaxis]) *
