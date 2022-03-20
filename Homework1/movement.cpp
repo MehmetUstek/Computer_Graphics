@@ -3,8 +3,9 @@
 struct ObjectLocation {
 
 	GLfloat locX, locY, velocityX, velocityY, v_init_X, v_init_Y;
+	float projectionConstant = 5;
 
-	void initObjectLocation(GLfloat locX, GLfloat locY, GLfloat velocityX, GLfloat velocityY) {
+	void initObjectLocation(GLfloat locX, GLfloat locY, GLfloat velocityX, GLfloat velocityY, float projection_constant) {
 		this->locX = locX;
 		this->locY = locY;
 		this->velocityX = velocityX;
@@ -16,11 +17,11 @@ struct ObjectLocation {
 	void updateObjectLocation(GLfloat radiusX, GLfloat radiusY) {
         
 
-        if ((locY >= 1 - radiusY || locY <= -1 + radiusY)) {
+        if ((locY >= projectionConstant - radiusY || locY <= -projectionConstant + radiusY)) {
             velocityY *= -1.0;
         }
 
-        if ((locX >= 1 - radiusX || locX <= -1 + radiusX)) {
+        if ((locX >= projectionConstant - radiusX || locX <= -projectionConstant + radiusX)) {
             velocityX *= -1.0;
         }
 

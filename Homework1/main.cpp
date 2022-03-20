@@ -13,6 +13,8 @@ GLsizei width = 760;
 GLsizei height = 760;
 ObjectLocation objectLocation;
 GLuint buffer;
+const float projection_constant = 5.0f;
+const float velocityConst = 0.01;
 
 
 
@@ -43,7 +45,7 @@ triangle_sphere(const point4& a, const point4& b, const point4& c)
 point4
 unit_sphere(const point4& p)
 {
-    float len = p.x * p.x + p.y * p.y + p.z * p.z;
+    float len = (p.x * p.x + p.y * p.y + p.z * p.z);
     point4 t;
     if (len > DivideByZeroTolerance) {
         t = p / sqrt(len);
@@ -79,6 +81,12 @@ tetrahedron_sphere(int count)
     vec4(-0.816497, -0.471405, -0.333333, 1.0),
     vec4(0.816497, -0.471405, -0.333333, 1.0)
     };
+    /*point4 v[4] = {
+    vec4(0.0, 0.0, 0.2,0.2),
+    vec4(0.0, 0.5, -0.12, 0.2),
+    vec4(-0.4, -0.21405, -0.15, 0.2),
+    vec4(0.4, -0.2, -0.15, 0.2)
+    };*/
     divide_triangle_sphere(v[0], v[1], v[2], count);
     divide_triangle_sphere(v[3], v[2], v[1], count);
     divide_triangle_sphere(v[0], v[3], v[1], count);
@@ -133,7 +141,7 @@ init()
 {
     tetrahedron_sphere(NumTimesToSubdivide);
     
-    objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, 0.001, -0.001);
+    objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, velocityConst, -velocityConst, projection_constant);
 
     glGenVertexArrays( 3, vao );
     glBindVertexArray( vao[0] );
@@ -206,12 +214,32 @@ init()
     glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
 
 
+    // Background color
+    //glBindVertexArray(vao[2]);
+
+    //GLfloat  vertices[6][3] = {
+    //     { -0.5, -0.5, 0.0 },
+    //     { -0.5,  0.5, 0.0 },
+    //     {  0.5,  0.5, 0.0 },
+    //     {  0.5, -0.5, 0.0 },
+    //     { -0.5, -0.5, 0.0 },
+    //     {  0.5,  0.5, 0.0 }
+    //};
+
+    //// Create and bind vertex buffer object
+    //GLuint background_buffer;
+    //glGenBuffers(1, &background_buffer);
+    //glBindBuffer(GL_ARRAY_BUFFER, background_buffer); // this buffer is attached to vao[0]
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+
+
     // Retrieve transformation uniform variable locations
     ModelView = glGetUniformLocation( program, "ModelView" );
     Projection = glGetUniformLocation( program, "Projection" );
     
     mat4  projection;
-    projection = Ortho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0); // Ortho(): user-defined function in mat.h
+    projection = Ortho(-projection_constant, projection_constant, -projection_constant, projection_constant, -projection_constant, projection_constant); // Ortho(): user-defined function in mat.h
     //projection = Perspective( 45.0, 1.0, 0.5, 3.0 ); //try also perspective projection instead of ortho
     glUniformMatrix4fv( Projection, 1, GL_TRUE, projection );
     
@@ -231,22 +259,14 @@ void
 display( void )
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    const vec3 displacement(objectLocation.locX, objectLocation.locY, 0.0);
+    mat4 model_view;
 
-    //  Generate tha model-view matrix
-    // Initial translation for putting into the view.
-    const vec3 displacement( objectLocation.locX, objectLocation.locY, 0.0 );
-    mat4 model_view = ( Translate( displacement ) * Scale(1.0, 1.0, 1.0) *
-             RotateX( Theta[Xaxis] ) *
-             RotateY( Theta[Yaxis] ) *
-             RotateZ( Theta[Zaxis] ) );
 
-    glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
-    
-    // Solid
-    
     switch (object_type) {
 
     case ObjectType::CUBE:
+        
         for (int i = 0; i < 8; i++) {
             colors[i] = color;
         }
@@ -262,6 +282,10 @@ display( void )
         else {
             glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
         }
+        model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
+            RotateX(Theta[Xaxis]) *
+            RotateY(Theta[Yaxis]) *
+            RotateZ(Theta[Zaxis]));
         break;
     case ObjectType::SPHERE:
         for (int i = 0; i < NumVertices_sphere; i++) {
@@ -283,9 +307,26 @@ display( void )
         else {
             glDrawArrays(GL_LINE_LOOP, 0, NumVertices_sphere);
         }
-        break;
         
+        model_view = (Translate(displacement) * Scale(0.2, 0.2, 0.2) *
+            RotateX(Theta[Xaxis]) *
+            RotateY(Theta[Yaxis]) *
+            RotateZ(Theta[Zaxis]));
+        break;
+    /*case ObjectType::BUNNY:*/
+        /*glBindVertexArray(vao[2]);
+        glDrawArrays(GL_TRIANGLES, 0, 6);*/
+
     }
+    //  Generate tha model-view matrix
+    // Initial translation for putting into the view.
+    
+
+    glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
+    
+    // Solid
+    
+    
 
     
     
@@ -305,10 +346,10 @@ void reshape( int w, int h )
     // Set projection matrix
     mat4  projection;
     if (w <= h)
-        projection = Ortho(-1.0, 1.0, -1.0 * (GLfloat) h / (GLfloat) w,
-                           1.0 * (GLfloat) h / (GLfloat) w, -1.0, 1.0);
-    else  projection = Ortho(-1.0* (GLfloat) w / (GLfloat) h, 1.0 *
-                             (GLfloat) w / (GLfloat) h, -1.0, 1.0, -1.0, 1.0);
+        projection = Ortho(-projection_constant, projection_constant, -projection_constant * (GLfloat) h / (GLfloat) w,
+            projection_constant * (GLfloat) h / (GLfloat) w, -projection_constant, projection_constant);
+    else  projection = Ortho(-projection_constant * (GLfloat) w / (GLfloat) h, projection_constant *
+                             (GLfloat) w / (GLfloat) h, -projection_constant, projection_constant, -projection_constant, projection_constant);
     
     glUniformMatrix4fv( Projection, 1, GL_TRUE, projection );
     
@@ -340,7 +381,7 @@ keyboard( unsigned char key,int x, int y )
         exit(EXIT_SUCCESS);
         break;
     case 'i': case 'I':
-        objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, 0.001, -0.001);
+        objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, 0.01, -0.01, projection_constant);
         break;
     case 'd': case 'D':
         isSolid = !isSolid; // Change the wireframe or solid by pressing to d.
