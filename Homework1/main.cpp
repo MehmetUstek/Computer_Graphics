@@ -13,6 +13,7 @@ GLsizei width = 760;
 GLsizei height = 760;
 ObjectLocation objectLocation;
 GLuint buffer;
+GLuint buffer_sphere;
 const float projection_constant = 5.0f;
 const float velocityConst = 0.01;
 
@@ -32,19 +33,19 @@ typedef Angel::vec4 point4;
 typedef Angel::vec4 color4;
 point4 points_sphere[NumVertices_sphere];
 color4 colors_sphere[NumVertices_sphere];
-vec3 normals_sphere[NumVertices_sphere];
 int Index_sphere = 0;
 GLuint sphere_indices[NumVertices_sphere];
 int temp_index = 0;
+float scale = 1;
 
 
 void
 triangle_sphere(const point4& a, const point4& b, const point4& c)
 {
     vec3 normal = normalize(cross(b - a, c - b));
-    sphere_indices[Index_sphere] = Index_sphere; normals_sphere[Index_sphere] = normal; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = a; Index_sphere++;
-    sphere_indices[Index_sphere] = Index_sphere; normals_sphere[Index_sphere] = normal; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = b; Index_sphere++;
-    sphere_indices[Index_sphere] = Index_sphere; normals_sphere[Index_sphere] = normal; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = c; Index_sphere++;
+    sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = a; Index_sphere++;
+    sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = b; Index_sphere++;
+    sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = c; Index_sphere++;
     temp_index++;
 }
 
@@ -101,14 +102,14 @@ const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
 // Vertices of a unit cube centered at origin, sides aligned with axes
 point4 points[8] = {
-    point4( -0.2, -0.2,  0.2, 1.0 ),
-    point4( -0.2,  0.2,  0.2, 1.0 ),
-    point4(  0.2,  0.2,  0.2, 1.0 ),
-    point4(  0.2, -0.2,  0.2, 1.0 ),
-    point4( -0.2, -0.2, -0.2, 1.0 ),
-    point4( -0.2,  0.2, -0.2, 1.0 ),
-    point4(  0.2,  0.2, -0.2, 1.0 ),
-    point4(  0.2, -0.2, -0.2, 1.0 )
+    point4(-0.5, -0.5,  0.5, 1.0),
+    point4(-0.5,  0.5,  0.5, 1.0),
+    point4(0.5,  0.5,  0.5, 1.0),
+    point4(0.5, -0.5,  0.5, 1.0),
+    point4(-0.5, -0.5, -0.5, 1.0),
+    point4(-0.5,  0.5, -0.5, 1.0),
+    point4(0.5,  0.5, -0.5, 1.0),
+    point4(0.5, -0.5, -0.5, 1.0)
 };
 
 // RGBA colors
@@ -191,32 +192,26 @@ init()
     
     // Sphere
     glBindVertexArray(vao[1]);
-    GLuint buffer_sphere;
     glGenBuffers(1, &buffer_sphere);
     glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere),
+    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(colors_sphere),
         NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
-        sizeof(normals_sphere), normals_sphere);
+        sizeof(colors_sphere), colors_sphere);
 
     GLuint index_buffer_sphere;
     glGenBuffers(1, &index_buffer_sphere);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_sphere);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphere_indices), sphere_indices, GL_STATIC_DRAW);
 
-    
-    glEnableVertexAttribArray(vPosition);
-    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-    GLuint vNormal = glGetAttribLocation(program, "vNormal");
+    GLuint vPosition1 = glGetAttribLocation(program, "vPosition");
+    glEnableVertexAttribArray(vPosition1);
+    glVertexAttribPointer(vPosition1, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 
-    glEnableVertexAttribArray(vNormal);
-    glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0,
-        BUFFER_OFFSET(sizeof(points_sphere)));
-
-    /*GLuint vColor_sphere = glGetAttribLocation(program, "vColor");
+    GLuint vColor_sphere = glGetAttribLocation(program, "vColor");
     glEnableVertexAttribArray(vColor_sphere);
-    glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));*/
+    glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
 
 
     // Background color
@@ -287,7 +282,7 @@ display( void )
         else {
             glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
         }
-        model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
+        model_view = (Translate(displacement) * Scale(scale, scale, scale) *
             RotateX(Theta[Xaxis]) *
             RotateY(Theta[Yaxis]) *
             RotateZ(Theta[Zaxis]));
@@ -297,27 +292,21 @@ display( void )
             colors_sphere[i] = color;
         }
         glBindVertexArray(vao[1]);
-        GLuint buffer_sphere;
-        glGenBuffers(1, &buffer_sphere);
         glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere),
+        glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(colors_sphere),
             NULL, GL_STATIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
         glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
-            sizeof(normals_sphere), normals_sphere);
+            sizeof(colors_sphere), colors_sphere);
         if (isSolid) {
             glDrawElements(GL_TRIANGLES, NumVertices_sphere, GL_UNSIGNED_INT, 0);
-
-            //glDrawArrays(GL_TRIANGLES, 0, NumVertices_sphere);
         }
         // Wireframe
         else {
             glDrawElements(GL_LINE_LOOP, NumVertices_sphere, GL_UNSIGNED_INT, 0);
-
-            //glDrawArrays(GL_LINES, 0, NumVertices_sphere);
         }
         
-        model_view = (Translate(displacement) * Scale(0.2, 0.2, 0.2) *
+        model_view = (Translate(displacement) * Scale(scale, scale, scale) *
             RotateX(Theta[Xaxis]) *
             RotateY(Theta[Yaxis]) *
             RotateZ(Theta[Zaxis]));
@@ -451,7 +440,7 @@ void timer( int p )
     if ( Theta[Axis] > 360.0 ) {
         Theta[Axis] -= 360.0;
     }*/
-    objectLocation.updateObjectLocation(0.2,0.2);
+    objectLocation.updateObjectLocation(scale, scale);
     /*const vec3 displacement(1, 0.0, 0.0);
     mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
         RotateX(Theta[Xaxis]) *
