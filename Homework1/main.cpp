@@ -30,11 +30,12 @@ using std::endl; using std::string;
 using std::ifstream; using std::vector;
 
 
-vector<point4> vertex_list_bunny;
-vector<color4> colors_bunny;
-vector<int> triangle_list_bunny;
+
 const int numVertices_bunny = 4922;
 const int numTriangles_bunny = 9840;
+color4 colors_bunny[numVertices_bunny];
+point4 vertex_list_bunny[numVertices_bunny];
+int triangle_list_bunny[numTriangles_bunny*3];
 
 
 void
@@ -51,7 +52,8 @@ readBunny() {
     for (int i = 0; i < numOfVertices; i++) {
         GLfloat x, y, z;
         file >> x >> y >> z;
-        vertex_list_bunny.push_back(point4(x, y, z, (GLfloat)1.0));
+        //vertex_list_bunny.push_back(point4(x, y, z, (GLfloat)1.0));
+        vertex_list_bunny[i] = point4(x, y, z, (GLfloat)1.0);
     }
 
     //Put the vertex alignment numbers to the triangles vector one by one
@@ -59,13 +61,13 @@ readBunny() {
         int dummy;
         int x, y, z;
         file >> dummy >> x >> y >> z;
-
-        triangle_list_bunny.push_back(x);
+        triangle_list_bunny[3 * i] = x;
+        triangle_list_bunny[(3 * i)+1] = y;
+        triangle_list_bunny[(3*i)+2] = z;
+        /*triangle_list_bunny.push_back(x);
         triangle_list_bunny.push_back(y);
-        triangle_list_bunny.push_back(z);
+        triangle_list_bunny.push_back(z);*/
     }
-
-    file.close();
 
     file.close();
 
@@ -191,8 +193,8 @@ init()
 {
     readBunny();
     tetrahedron_sphere(NumTimesToSubdivide);
-    for (int i = 0; i < numTriangles_bunny; i++) {
-        colors_bunny.push_back(color);
+    for (int i = 0; i < numVertices_bunny; i++) {
+        colors_bunny[i] = color;
     }
     
     objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, velocityConst, -velocityConst, projection_constant);
@@ -272,16 +274,16 @@ init()
     glBindVertexArray(vao[2]);
     glGenBuffers(1, &buffer_bunny);
     glBindBuffer(GL_ARRAY_BUFFER, buffer_bunny);
-    glBufferData(GL_ARRAY_BUFFER, vertex_list_bunny.size() + colors_bunny.size(),
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_list_bunny) + sizeof(colors_bunny),
         NULL, GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_list_bunny.size(), vertex_list_bunny.data());
-    glBufferSubData(GL_ARRAY_BUFFER, vertex_list_bunny.size(),
-        colors_bunny.size(), colors_bunny.data());
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertex_list_bunny), vertex_list_bunny);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertex_list_bunny),
+        sizeof(colors_bunny), colors_bunny);
 
     GLuint index_buffer_bunny;
     glGenBuffers(1, &index_buffer_bunny);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_bunny);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangle_list_bunny.size(), triangle_list_bunny.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triangle_list_bunny), triangle_list_bunny, GL_STATIC_DRAW);
 
     GLuint vPosition2 = glGetAttribLocation(program, "vPosition");
     glEnableVertexAttribArray(vPosition2);
@@ -289,7 +291,7 @@ init()
 
     GLuint vColor_bunny = glGetAttribLocation(program, "vColor");
     glEnableVertexAttribArray(vColor_bunny);
-    glVertexAttribPointer(vColor_bunny, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(vertex_list_bunny.size()));
+    glVertexAttribPointer(vColor_bunny, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(vertex_list_bunny)));
 
 
 
@@ -371,26 +373,25 @@ display( void )
             RotateZ(Theta[Zaxis]));
         break;
     case ObjectType::BUNNY:
-        colors_bunny.clear();
         for (int i = 0; i < numVertices_bunny; i++) {
-            colors_bunny.push_back(color);
+            colors_bunny[i] = color;
         }
         glBindVertexArray(vao[2]);
         glBindBuffer(GL_ARRAY_BUFFER, buffer_bunny);
-        glBufferData(GL_ARRAY_BUFFER, vertex_list_bunny.size() + colors_bunny.size(),
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_list_bunny) + sizeof(colors_bunny),
             NULL, GL_STATIC_DRAW);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_list_bunny.size(), vertex_list_bunny.data());
-        glBufferSubData(GL_ARRAY_BUFFER, vertex_list_bunny.size(),
-            colors_bunny.size(), colors_bunny.data());
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertex_list_bunny), vertex_list_bunny);
+        glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertex_list_bunny),
+            sizeof(colors_bunny), colors_bunny);
         if (isSolid) {
-            glDrawElements(GL_TRIANGLES, numVertices_bunny, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, numTriangles_bunny*3, GL_UNSIGNED_INT, 0);
         }
         // Wireframe
         else {
-            glDrawElements(GL_LINE_LOOP, numVertices_bunny, GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_LINE_LOOP, numTriangles_bunny*3, GL_UNSIGNED_INT, 0);
         }
 
-        model_view = (Translate(displacement) * Scale(scale, scale, scale) *
+        model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5) *
             RotateX(Theta[Xaxis]) *
             RotateY(Theta[Yaxis]) *
             RotateZ(Theta[Zaxis]));
