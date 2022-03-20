@@ -197,7 +197,7 @@ init()
         colors_bunny[i] = color;
     }
     
-    objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, velocityConst, -velocityConst, projection_constant);
+    objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, velocityConst, -2*velocityConst, projection_constant);
 
     glGenVertexArrays( 3, vao );
     glBindVertexArray( vao[0] );
@@ -514,11 +514,19 @@ void mouse( int button, int state, int x, int y )
 //----------------------------------------------------------------------------
 void timer( int p )
 {
-    /*Theta[Axis] += 1.0;
-    if ( Theta[Axis] > 360.0 ) {
-        Theta[Axis] -= 360.0;
-    }*/
-    objectLocation.updateObjectLocation(scale, scale);
+    switch (object_type) {
+
+    case ObjectType::CUBE:
+        objectLocation.updateObjectLocation(scale / 2, scale /2);
+        break;
+    case ObjectType::SPHERE:
+        objectLocation.updateObjectLocation(scale, scale);
+        break;
+    case ObjectType::BUNNY:
+        objectLocation.updateObjectLocation(scale*2, scale*2.5);
+        break;
+
+    };
     /*const vec3 displacement(1, 0.0, 0.0);
     mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
         RotateX(Theta[Xaxis]) *
