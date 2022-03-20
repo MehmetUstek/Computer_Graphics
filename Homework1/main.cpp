@@ -1,10 +1,10 @@
-//
-//  Display a rotating cube, revisited with triangle list, timer callback and reshape
-//
-
 #include "Angel.h"
 #include "objectType.cpp"
 #include "movement.cpp"
+#include <vector>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 bool isSolid = true;
 ObjectType object_type = ObjectType::CUBE;
@@ -14,15 +14,64 @@ GLsizei height = 760;
 ObjectLocation objectLocation;
 GLuint buffer;
 GLuint buffer_sphere;
+GLuint buffer_bunny;
 const float projection_constant = 5.0f;
 const float velocityConst = 0.01;
-
 
 
 typedef vec4  color4;
 typedef vec4  point4;
 color4 color = color4(0.0, 0.0, 0.0, 1.0);  // black
 GLuint vao[3];
+
+
+using std::cout; using std::cerr;
+using std::endl; using std::string;
+using std::ifstream; using std::vector;
+
+
+vector<point4> vertex_list_bunny;
+vector<color4> colors_bunny;
+vector<int> triangle_list_bunny;
+const int numVertices_bunny = 4922;
+const int numTriangles_bunny = 9840;
+
+
+void
+readBunny() {
+    std::string input;
+    int numOfVertices, numOfTriangles;
+    int dumm;
+
+    std::ifstream file("bunny.off"); //Read bunny.off
+    file >> input;                   //"OFF" word
+    file >> numOfVertices >> numOfTriangles >> dumm;
+
+
+    for (int i = 0; i < numOfVertices; i++) {
+        GLfloat x, y, z;
+        file >> x >> y >> z;
+        vertex_list_bunny.push_back(point4(x, y, z, (GLfloat)1.0));
+    }
+
+    //Put the vertex alignment numbers to the triangles vector one by one
+    for (int i = 0; i < numOfTriangles; i++) {
+        int dummy;
+        int x, y, z;
+        file >> dummy >> x >> y >> z;
+
+        triangle_list_bunny.push_back(x);
+        triangle_list_bunny.push_back(y);
+        triangle_list_bunny.push_back(z);
+    }
+
+    file.close();
+
+    file.close();
+
+}
+
+
 
 //Sphere
 const int NumTimesToSubdivide = 5;
@@ -140,7 +189,11 @@ GLuint  ModelView, Projection;
 void
 init()
 {
+    readBunny();
     tetrahedron_sphere(NumTimesToSubdivide);
+    for (int i = 0; i < numTriangles_bunny; i++) {
+        colors_bunny.push_back(color);
+    }
     
     objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, velocityConst, -velocityConst, projection_constant);
 
@@ -214,23 +267,29 @@ init()
     glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
 
 
-    // Background color
-    //glBindVertexArray(vao[2]);
+    // Bunny
 
-    //GLfloat  vertices[6][3] = {
-    //     { -0.5, -0.5, 0.0 },
-    //     { -0.5,  0.5, 0.0 },
-    //     {  0.5,  0.5, 0.0 },
-    //     {  0.5, -0.5, 0.0 },
-    //     { -0.5, -0.5, 0.0 },
-    //     {  0.5,  0.5, 0.0 }
-    //};
+    glBindVertexArray(vao[2]);
+    glGenBuffers(1, &buffer_bunny);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer_bunny);
+    glBufferData(GL_ARRAY_BUFFER, vertex_list_bunny.size() + colors_bunny.size(),
+        NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_list_bunny.size(), vertex_list_bunny.data());
+    glBufferSubData(GL_ARRAY_BUFFER, vertex_list_bunny.size(),
+        colors_bunny.size(), colors_bunny.data());
 
-    //// Create and bind vertex buffer object
-    //GLuint background_buffer;
-    //glGenBuffers(1, &background_buffer);
-    //glBindBuffer(GL_ARRAY_BUFFER, background_buffer); // this buffer is attached to vao[0]
-    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    GLuint index_buffer_bunny;
+    glGenBuffers(1, &index_buffer_bunny);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_bunny);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangle_list_bunny.size(), triangle_list_bunny.data(), GL_STATIC_DRAW);
+
+    GLuint vPosition2 = glGetAttribLocation(program, "vPosition");
+    glEnableVertexAttribArray(vPosition2);
+    glVertexAttribPointer(vPosition2, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
+    GLuint vColor_bunny = glGetAttribLocation(program, "vColor");
+    glEnableVertexAttribArray(vColor_bunny);
+    glVertexAttribPointer(vColor_bunny, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(vertex_list_bunny.size()));
 
 
 
@@ -311,9 +370,32 @@ display( void )
             RotateY(Theta[Yaxis]) *
             RotateZ(Theta[Zaxis]));
         break;
-    /*case ObjectType::BUNNY:*/
-        /*glBindVertexArray(vao[2]);
-        glDrawArrays(GL_TRIANGLES, 0, 6);*/
+    case ObjectType::BUNNY:
+        colors_bunny.clear();
+        for (int i = 0; i < numVertices_bunny; i++) {
+            colors_bunny.push_back(color);
+        }
+        glBindVertexArray(vao[2]);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer_bunny);
+        glBufferData(GL_ARRAY_BUFFER, vertex_list_bunny.size() + colors_bunny.size(),
+            NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, vertex_list_bunny.size(), vertex_list_bunny.data());
+        glBufferSubData(GL_ARRAY_BUFFER, vertex_list_bunny.size(),
+            colors_bunny.size(), colors_bunny.data());
+        if (isSolid) {
+            glDrawElements(GL_TRIANGLES, numVertices_bunny, GL_UNSIGNED_INT, 0);
+        }
+        // Wireframe
+        else {
+            glDrawElements(GL_LINE_LOOP, numVertices_bunny, GL_UNSIGNED_INT, 0);
+        }
+
+        model_view = (Translate(displacement) * Scale(scale, scale, scale) *
+            RotateX(Theta[Xaxis]) *
+            RotateY(Theta[Yaxis]) *
+            RotateZ(Theta[Zaxis]));
+        break;
+
 
     }
     //  Generate tha model-view matrix
@@ -321,11 +403,6 @@ display( void )
     
 
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
-    
-    // Solid
-    
-    
-
     
     
     glutSwapBuffers();
