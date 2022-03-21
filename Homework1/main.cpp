@@ -15,7 +15,7 @@ ObjectLocation objectLocation;
 GLuint buffer;
 GLuint buffer_sphere;
 GLuint buffer_bunny;
-const float projection_constant = 5.0f;
+float projection_constant = 5.0f;
 const float velocityConst = 0.01;
 
 
@@ -305,6 +305,7 @@ init()
     ModelView = glGetUniformLocation( program, "ModelView" );
     Projection = glGetUniformLocation( program, "Projection" );
     
+    
     mat4  projection;
     projection = Ortho(-projection_constant, projection_constant, -projection_constant, projection_constant, -projection_constant, projection_constant); // Ortho(): user-defined function in mat.h
     //projection = Perspective( 45.0, 1.0, 0.5, 3.0 ); //try also perspective projection instead of ortho
@@ -427,13 +428,17 @@ void reshape( int w, int h )
     
     // Set projection matrix
     mat4  projection;
-    if (w <= h)
-        projection = Ortho(-projection_constant, projection_constant, -projection_constant * (GLfloat) h / (GLfloat) w,
-            projection_constant * (GLfloat) h / (GLfloat) w, -projection_constant, projection_constant);
-    else  projection = Ortho(-projection_constant * (GLfloat) w / (GLfloat) h, projection_constant *
-                             (GLfloat) w / (GLfloat) h, -projection_constant, projection_constant, -projection_constant, projection_constant);
-    
-    glUniformMatrix4fv( Projection, 1, GL_TRUE, projection );
+    if (w <= h) {
+        projection = Ortho(-projection_constant, projection_constant, -projection_constant * (GLfloat)h / (GLfloat)w,
+            projection_constant * (GLfloat)h / (GLfloat)w, -projection_constant, projection_constant);
+        projection_constant *= (GLfloat)h / (GLfloat)w;
+    }
+    else {
+        projection = Ortho(-projection_constant * (GLfloat)w / (GLfloat)h, projection_constant *
+            (GLfloat)w / (GLfloat)h, -projection_constant, projection_constant, -projection_constant, projection_constant);
+        projection_constant *= (GLfloat)w / (GLfloat)h;
+
+    }
     
     //reshape callback needs to be changed if perspective prohection is used
 }
