@@ -87,7 +87,8 @@ color4 colors_sphere[NumVertices_sphere];
 int Index_sphere = 0;
 GLuint sphere_indices[NumVertices_sphere];
 int temp_index = 0;
-float scale = 1;
+float scale = 1.0f;
+float scale_init = 1.0f;
 
 
 void
@@ -191,13 +192,18 @@ GLuint  ModelView, Projection;
 void
 init()
 {
+    cout << "-h: Help" << endl << "-q: Quit program" << endl << "-i: Initilization of the animation, starting from the top left corner" << endl;
+    cout << "-d: Change drawing mode between solid and wireframe" << endl;
+    cout << "Change object type with mouse Events:" << endl << " Left click for changing between the objects, starting from cube, then sphere and lastly the bunny" << endl << " The objects will circle back to cube after bunny" << endl;
+    cout << "Change color with numpad actions from 1-8:" << endl;
+    cout << "  1: Black" << endl << "  2: Red" << endl << "  3: Yellow" << endl << "  4: Green" << endl << "  5: Blue" << endl << "  6: Magenta" << endl << "  7: White" << endl << "  8: Cyan" << endl << endl << endl;
     readBunny();
     tetrahedron_sphere(NumTimesToSubdivide);
     for (int i = 0; i < numVertices_bunny; i++) {
         colors_bunny[i] = color;
     }
     
-    objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, velocityConst, -2*velocityConst, projection_constant);
+    objectLocation.initObjectLocation(-projection_constant + scale + 0.2, scale+0.1, velocityConst, -2*velocityConst, projection_constant);
 
     glGenVertexArrays( 3, vao );
     glBindVertexArray( vao[0] );
@@ -327,7 +333,6 @@ display( void )
     switch (object_type) {
 
     case ObjectType::CUBE:
-        
         for (int i = 0; i < 8; i++) {
             colors[i] = color;
         }
@@ -349,6 +354,7 @@ display( void )
             RotateZ(Theta[Zaxis]));
         break;
     case ObjectType::SPHERE:
+
         for (int i = 0; i < NumVertices_sphere; i++) {
             colors_sphere[i] = color;
         }
@@ -391,7 +397,7 @@ display( void )
             glDrawElements(GL_LINE_LOOP, numTriangles_bunny*3, GL_UNSIGNED_INT, 0);
         }
 
-        model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5) *
+        model_view = (Translate(displacement) * Scale(scale/8, scale/8, scale/8) *
             RotateX(Theta[Xaxis]) *
             RotateY(Theta[Yaxis]) *
             RotateZ(Theta[Zaxis]));
@@ -456,8 +462,15 @@ keyboard( unsigned char key,int x, int y )
     case 'q': case 'Q':
         exit(EXIT_SUCCESS);
         break;
+    case 'h': case 'H':
+        cout << "-h: Help:" << endl << "-q: Quit program" << endl << "-i: Initilization of the animation, starting from the top left corner" << endl;
+        cout << "-d: Change drawing mode between solid and wireframe" << endl;
+        cout << "Change object type with mouse Events:" << endl << " Left click for changing between the objects, starting from cube, then sphere and lastly the bunny" << endl << " The objects will circle back to cube after bunny" << endl;
+        cout << "Change color with numpad actions from 1-8:" << endl;
+        cout << "  1: Black" << endl << "  2: Red" << endl << "  3: Yellow" << endl << "  4: Green" << endl << "  5: Blue" << endl << "  6: Magenta" << endl << "  7: White" << endl << "  8: Cyan" << endl;
+        break;
     case 'i': case 'I':
-        objectLocation.initObjectLocation(-1.0 + 0.3, 0.5, 0.01, -0.01, projection_constant);
+        objectLocation.initObjectLocation(-projection_constant + 2*scale, scale + 0.1, velocityConst, -2 * velocityConst, projection_constant);
         break;
     case 'd': case 'D':
         isSolid = !isSolid; // Change the wireframe or solid by pressing to d.
@@ -523,17 +536,10 @@ void timer( int p )
         objectLocation.updateObjectLocation(scale, scale);
         break;
     case ObjectType::BUNNY:
-        objectLocation.updateObjectLocation(scale*2, scale*2.5);
+        objectLocation.updateObjectLocation(scale, scale*1.8);
         break;
 
     };
-    /*const vec3 displacement(1, 0.0, 0.0);
-    mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
-        RotateX(Theta[Xaxis]) *
-        RotateY(Theta[Yaxis]) *
-        RotateZ(Theta[Zaxis]));*/
-
-    //glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view);
 
     glutPostRedisplay();
     
