@@ -6,7 +6,9 @@
 #include <iostream>
 #include <sstream>
 
+// The drawing mode controller
 bool isSolid = true;
+// Initial object -> cube, then with mouse click, sphere, and then bunny.
 ObjectType object_type = ObjectType::CUBE;
 // Window sizes:
 GLsizei width = 760;
@@ -38,25 +40,25 @@ point4 vertex_list_bunny[numVertices_bunny];
 int triangle_list_bunny[numTriangles_bunny*3];
 
 
+// Read bunny.off, extract vertices, and triangles list. Since we know vertices and triangles size, to avoid dynamic array approach, I
+// specified the numVertices and numTriangles beforehand.
 void
 readBunny() {
     std::string input;
     int numOfVertices, numOfTriangles;
     int dumm;
 
-    std::ifstream file("bunny.off"); //Read bunny.off
-    file >> input;                   //"OFF" word
+    std::ifstream file("bunny.off");
+    file >> input;
     file >> numOfVertices >> numOfTriangles >> dumm;
 
 
     for (int i = 0; i < numOfVertices; i++) {
         GLfloat x, y, z;
         file >> x >> y >> z;
-        //vertex_list_bunny.push_back(point4(x, y, z, (GLfloat)1.0));
         vertex_list_bunny[i] = point4(x, y, z, (GLfloat)1.0);
     }
 
-    //Put the vertex alignment numbers to the triangles vector one by one
     for (int i = 0; i < numOfTriangles; i++) {
         int dummy;
         int x, y, z;
@@ -64,18 +66,14 @@ readBunny() {
         triangle_list_bunny[3 * i] = x;
         triangle_list_bunny[(3 * i)+1] = y;
         triangle_list_bunny[(3*i)+2] = z;
-        /*triangle_list_bunny.push_back(x);
-        triangle_list_bunny.push_back(y);
-        triangle_list_bunny.push_back(z);*/
     }
-
     file.close();
-
 }
 
 
-
-//Sphere
+//Sphere 
+// These codes along with the triangle_sphere, unit_sphere, divide_triangle_sphere, and tetrahedron_sphere functions
+// are retrieved from the course textbook, appendix 7.
 const int NumTimesToSubdivide = 5;
 const int NumTriangles = 4096;
 // (4 faces)^(NumTimesToSubdivide + 1)
@@ -86,19 +84,16 @@ point4 points_sphere[NumVertices_sphere];
 color4 colors_sphere[NumVertices_sphere];
 int Index_sphere = 0;
 GLuint sphere_indices[NumVertices_sphere];
-int temp_index = 0;
 float scale = 1.0f;
-float scale_init = 1.0f;
 
 
+// The normals are deleted, instead I added sphere_indices to get the sphere index values from each vertex to another.
 void
 triangle_sphere(const point4& a, const point4& b, const point4& c)
 {
-    vec3 normal = normalize(cross(b - a, c - b));
     sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = a; Index_sphere++;
     sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = b; Index_sphere++;
     sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = c; Index_sphere++;
-    temp_index++;
 }
 
 point4
@@ -148,8 +143,6 @@ tetrahedron_sphere(int count)
 }
 
 
-
-
 const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
 // Vertices of a unit cube centered at origin, sides aligned with axes
@@ -178,11 +171,6 @@ color4 colors[8] = {
 
 
 
-// Array of rotation angles (in degrees) for each coordinate axis
-enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
-int  Axis = Xaxis;
-GLfloat  Theta[NumAxes] = { 0.0, 0.0, 0.0 };
-
 // Model-view and projection matrices uniform location
 GLuint  ModelView, Projection;
 
@@ -197,10 +185,11 @@ init()
     cout << "Change object type with mouse Events:" << endl << " Left click for changing between the objects, starting from cube, then sphere and lastly the bunny" << endl << " The objects will circle back to cube after bunny" << endl;
     cout << "Change color with numpad actions from 1-8:" << endl;
     cout << "  1: Black" << endl << "  2: Red" << endl << "  3: Yellow" << endl << "  4: Green" << endl << "  5: Blue" << endl << "  6: Magenta" << endl << "  7: White" << endl << "  8: Cyan" << endl << endl << endl;
-    readBunny();
-    tetrahedron_sphere(NumTimesToSubdivide);
+    
+    readBunny(); // read bunny and extract triangles and vertex list, which will then used for bunny creation.
+    tetrahedron_sphere(NumTimesToSubdivide); // Create sphere.
     for (int i = 0; i < numVertices_bunny; i++) {
-        colors_bunny[i] = color;
+        colors_bunny[i] = color; // Assign bunny colors at initialization. (to black)
     }
     
     objectLocation.initObjectLocation(-projection_constant + scale + 0.2, scale+0.1, velocityConst, -2*velocityConst, projection_constant);
@@ -208,9 +197,6 @@ init()
     glGenVertexArrays( 3, vao );
     glBindVertexArray( vao[0] );
     GLuint program = InitShader("vshader.glsl", "fshader.glsl");
-
-
-    // Create and initialize a vertex buffer object
     
     glGenBuffers( 1, &buffer );
     glBindBuffer( GL_ARRAY_BUFFER, buffer );
@@ -234,15 +220,12 @@ init()
             6, 7, 3
         };
     
-    // Create and initialize an index buffer object
+    // Create and initialize an index buffer object for cube.
     GLuint index_buffer;
     glGenBuffers(1, &index_buffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cube_indices), cube_indices, GL_STATIC_DRAW);
 
-    // Load shaders and use the resulting shader program
-    
-    // set up vertex arrays
     GLuint vPosition = glGetAttribLocation( program, "vPosition" );
     glEnableVertexAttribArray( vPosition );
     glVertexAttribPointer( vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0) );
@@ -251,7 +234,7 @@ init()
     glEnableVertexAttribArray( vColor );
     glVertexAttribPointer( vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points)) );
     
-    // Sphere
+    // Sphere object binding and creation.
     glBindVertexArray(vao[1]);
     glGenBuffers(1, &buffer_sphere);
     glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
@@ -261,6 +244,7 @@ init()
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
         sizeof(colors_sphere), colors_sphere);
 
+    // Create and initialize an index buffer object for sphere.
     GLuint index_buffer_sphere;
     glGenBuffers(1, &index_buffer_sphere);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_sphere);
@@ -275,8 +259,7 @@ init()
     glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
 
 
-    // Bunny
-
+    // Bunny object binding and creation.
     glBindVertexArray(vao[2]);
     glGenBuffers(1, &buffer_bunny);
     glBindBuffer(GL_ARRAY_BUFFER, buffer_bunny);
@@ -286,6 +269,7 @@ init()
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertex_list_bunny),
         sizeof(colors_bunny), colors_bunny);
 
+    // Create and initialize an index buffer object for bunny.
     GLuint index_buffer_bunny;
     glGenBuffers(1, &index_buffer_bunny);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_bunny);
@@ -323,6 +307,8 @@ init()
 
 //----------------------------------------------------------------------------
 
+
+
 void
 display( void )
 {
@@ -335,7 +321,7 @@ display( void )
 
     case ObjectType::CUBE:
         for (int i = 0; i < 8; i++) {
-            colors[i] = color;
+            colors[i] = color; // Reassign colors for cube. And then rebind the points and color data to reflect the color changes.
         }
         glBindVertexArray(vao[0]);
         glBindBuffer(GL_ARRAY_BUFFER, buffer);
@@ -349,15 +335,12 @@ display( void )
         else {
             glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
         }
-        model_view = (Translate(displacement) * Scale(scale, scale, scale) *
-            RotateX(Theta[Xaxis]) *
-            RotateY(Theta[Yaxis]) *
-            RotateZ(Theta[Zaxis]));
+        model_view = (Translate(displacement) * Scale(scale, scale, scale));
         break;
     case ObjectType::SPHERE:
 
         for (int i = 0; i < NumVertices_sphere; i++) {
-            colors_sphere[i] = color;
+            colors_sphere[i] = color; // Reassign colors for sphere. And then rebind the points and color data to reflect the color changes.
         }
         glBindVertexArray(vao[1]);
         glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
@@ -374,14 +357,11 @@ display( void )
             glDrawElements(GL_LINE_LOOP, NumVertices_sphere, GL_UNSIGNED_INT, 0);
         }
         
-        model_view = (Translate(displacement) * Scale(scale, scale, scale) *
-            RotateX(Theta[Xaxis]) *
-            RotateY(Theta[Yaxis]) *
-            RotateZ(Theta[Zaxis]));
+        model_view = (Translate(displacement) * Scale(scale, scale, scale));
         break;
     case ObjectType::BUNNY:
         for (int i = 0; i < numVertices_bunny; i++) {
-            colors_bunny[i] = color;
+            colors_bunny[i] = color; // Reassign colors for bunny. And then rebind the points and color data to reflect the color changes.
         }
         glBindVertexArray(vao[2]);
         glBindBuffer(GL_ARRAY_BUFFER, buffer_bunny);
@@ -398,16 +378,11 @@ display( void )
             glDrawElements(GL_LINE_LOOP, numTriangles_bunny*3, GL_UNSIGNED_INT, 0);
         }
 
-        model_view = (Translate(displacement) * Scale(scale/8, scale/8, scale/8) *
-            RotateX(Theta[Xaxis]) *
-            RotateY(Theta[Yaxis]) *
-            RotateZ(Theta[Zaxis]));
+        model_view = (Translate(displacement) * Scale(scale / 8, scale / 8, scale / 8));
         break;
 
 
     }
-    //  Generate tha model-view matrix
-    // Initial translation for putting into the view.
     
 
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
@@ -440,23 +415,9 @@ void reshape( int w, int h )
 
     }
     
-    //reshape callback needs to be changed if perspective prohection is used
 }
 
 
-//----------------------------------------------------------------------------
-
-void
-idle( void )
-{
-    Theta[Axis] += 0.2;
-
-    if ( Theta[Axis] > 360.0 ) {
-        Theta[Axis] -= 360.0;
-    }
-    
-    glutPostRedisplay();
-}
 
 //----------------------------------------------------------------------------
 
@@ -516,6 +477,7 @@ keyboard( unsigned char key,int x, int y )
 
 void mouse( int button, int state, int x, int y )
 {
+    // Mouse click event: Change object type if the left mouse button is down.
     if ( state == GLUT_DOWN ) {
         switch( button ) {
         case GLUT_LEFT_BUTTON:
@@ -532,6 +494,8 @@ void mouse( int button, int state, int x, int y )
 //----------------------------------------------------------------------------
 void timer( int p )
 {
+    // Update the object location at each time passed. The radius are updated since there can be change in object types and objects do not have the same scale.
+    // Thus prevents resulting in unwanted scale problems.
     switch (object_type) {
 
     case ObjectType::CUBE:
@@ -570,7 +534,6 @@ main( int argc, char **argv )
     
     glutDisplayFunc( display ); // set display callback function
     glutReshapeFunc( reshape );
-    //glutIdleFunc( idle );//can also use idle event for animation instaed of timer
     glutMouseFunc( mouse );
     glutKeyboardFunc(keyboard);
     
