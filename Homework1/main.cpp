@@ -85,6 +85,8 @@ color4 colors_sphere[NumVertices_sphere];
 int Index_sphere = 0;
 GLuint sphere_indices[NumVertices_sphere];
 float scale = 1.0f;
+GLfloat widthRatio = 1.0;
+GLfloat heightRatio = 1.0;
 
 
 // The normals are deleted, instead I added sphere_indices to get the sphere index values from each vertex to another.
@@ -192,7 +194,7 @@ init()
         colors_bunny[i] = color; // Assign bunny colors at initialization. (to black)
     }
     
-    objectLocation.initObjectLocation(-projection_constant + scale + 0.2, scale+0.1, velocityConst, -2*velocityConst, projection_constant);
+    objectLocation.initObjectLocation(-projection_constant + scale + 0.2, scale+0.3, velocityConst, -2*velocityConst, projection_constant);
 
     glGenVertexArrays( 3, vao );
     glBindVertexArray( vao[0] );
@@ -291,7 +293,7 @@ init()
     
     
     mat4  projection;
-    projection = Ortho(-projection_constant, projection_constant, -projection_constant, projection_constant, -projection_constant, projection_constant); // Ortho(): user-defined function in mat.h
+    projection = Ortho(-projection_constant *widthRatio, projection_constant * widthRatio, -projection_constant * heightRatio, projection_constant * heightRatio, -projection_constant, projection_constant); // Ortho(): user-defined function in mat.h
     //projection = Perspective( 45.0, 1.0, 0.5, 3.0 ); //try also perspective projection instead of ortho
     glUniformMatrix4fv( Projection, 1, GL_TRUE, projection );
     
@@ -384,8 +386,11 @@ display( void )
 
     }
     
-
+    mat4  projection;
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
+    projection = Ortho(-5.0 * widthRatio, 5.0 * widthRatio, -5.0 * heightRatio, 5.0 * heightRatio, -5.0, 5.0); // Ortho(): user-defined function in mat.h
+
+    glUniformMatrix4fv(Projection, 1, GL_TRUE, projection);
     
     
     glutSwapBuffers();
@@ -401,19 +406,13 @@ void reshape( int w, int h )
 {
     glViewport( 0, 0, w, h );
     
-    // Set projection matrix
-    mat4  projection;
-    if (w <= h) {
-        projection = Ortho(-projection_constant, projection_constant, -projection_constant * (GLfloat)h / (GLfloat)w,
-            projection_constant * (GLfloat)h / (GLfloat)w, -projection_constant, projection_constant);
-        projection_constant *= (GLfloat)h / (GLfloat)w;
-    }
-    else {
-        projection = Ortho(-projection_constant * (GLfloat)w / (GLfloat)h, projection_constant *
-            (GLfloat)w / (GLfloat)h, -projection_constant, projection_constant, -projection_constant, projection_constant);
-        projection_constant *= (GLfloat)w / (GLfloat)h;
+    scale = (GLfloat)w / (GLfloat)h;
+    widthRatio = (GLfloat)w / 760;
+    heightRatio = (GLfloat)h / 760;
+    width = w;
+    height = h;
 
-    }
+
     
 }
 
@@ -499,13 +498,13 @@ void timer( int p )
     switch (object_type) {
 
     case ObjectType::CUBE:
-        objectLocation.updateObjectLocation(scale / 2, scale /2);
+        objectLocation.updateObjectLocation(scale/2, scale/2, widthRatio, heightRatio);
         break;
     case ObjectType::SPHERE:
-        objectLocation.updateObjectLocation(scale, scale);
+        objectLocation.updateObjectLocation(scale, scale, widthRatio, heightRatio);
         break;
     case ObjectType::BUNNY:
-        objectLocation.updateObjectLocation(scale, scale*1.8);
+        objectLocation.updateObjectLocation(scale, scale*1.8, widthRatio, heightRatio);
         break;
 
     };
