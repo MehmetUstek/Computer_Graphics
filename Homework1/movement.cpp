@@ -25,8 +25,6 @@ struct ObjectLocation {
 
         locX += velocityX;
         locY += velocityY;
-
-        
 	}
 
 

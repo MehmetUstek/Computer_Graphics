@@ -405,15 +405,9 @@ display( void )
 void reshape( int w, int h )
 {
     glViewport( 0, 0, w, h );
-    
     scale = (GLfloat)w / (GLfloat)h;
     widthRatio = (GLfloat)w / 760;
     heightRatio = (GLfloat)h / 760;
-    width = w;
-    height = h;
-
-
-    
 }
 
 

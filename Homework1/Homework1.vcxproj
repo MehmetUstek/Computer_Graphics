@@ -142,7 +142,6 @@
   <ItemGroup>
     <ClInclude Include="Angel.h" />
     <ClInclude Include="mat.h" />
-    <ClInclude Include="Object.h" />
     <ClInclude Include="vec.h" />
   </ItemGroup>
   <ItemGroup>
@@ -152,12 +151,10 @@
     <None Include="vshader.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cube.cpp" />
     <ClCompile Include="movement.cpp" />
     <ClCompile Include="objectType.cpp" />
     <ClCompile Include="InitShader.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="sphere.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
