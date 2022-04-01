@@ -75,25 +75,14 @@ quad(int a, int b, int c, int d, bool isFaceVisible, int cubeIndex)
     else {
         faceColor = color_cycle[colorIndex];
     }
-    if (cubeIndex != 0) {
-        point4 temp = point4(0, 0, 0.0, 1.0);
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[a] + temp; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[b] + temp; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[c] + temp; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[a] + temp; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[c] + temp; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[d] + temp; Index++;
-        colorIndex++;
-    }
-    else {
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[a]; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[b]; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[c]; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[a]; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[c]; Index++;
-        colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[d]; Index++;
-        colorIndex++;
-    }
+    colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[a]; Index++;
+    colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[b]; Index++;
+    colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[c]; Index++;
+    colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[a]; Index++;
+    colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[c]; Index++;
+    colors[cubeIndex][Index] = faceColor; points[cubeIndex][Index] = vertices[d]; Index++;
+    colorIndex++;
+    
 }
 
 
@@ -114,6 +103,7 @@ colorcube(bool isMiddleObject, int cubeIndex)
     quad(6, 5, 1, 2, false, cubeIndex);
     quad(4, 5, 6, 7, false, cubeIndex);
     quad(5, 4, 0, 1, false, cubeIndex);
+    Index = 0;
     colorIndex = 0;
 }
 
@@ -121,65 +111,67 @@ colorcube(bool isMiddleObject, int cubeIndex)
 
 // OpenGL initialization
 
-GLuint vao[2];
+GLuint vao[NumSquares];
+GLuint vPosition, vColor;
+GLuint buffer;
 void
 init()
 {
-    colorcube(false,0);
-    colorcube(false,1);
-
-    // Create a vertex array object
-    
-    glGenVertexArrays(2, vao);
-    glBindVertexArray(vao[0]);
-
-    // Create and initialize a buffer object
-    GLuint buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points[0]) + sizeof(colors[0]), NULL, GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points[0]), points[0]);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points[0]), sizeof(colors[0]), colors[0]);
-
-    // Load shaders and use the resulting shader program
+    glGenVertexArrays(NumSquares, vao);
     GLuint program = InitShader("vshader.glsl", "fshader.glsl");
+    for (int i = 0; i < NumSquares; i++) {
+        colorcube(false, i);
 
-    // set up vertex arrays
-    GLuint vPosition = glGetAttribLocation(program, "vPosition");
-    glEnableVertexAttribArray(vPosition);
-    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+        // Create a vertex array object
 
-    GLuint vColor = glGetAttribLocation(program, "vColor");
-    glEnableVertexAttribArray(vColor);
-    glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points[0])));
+        
+        glBindVertexArray(vao[i]);
 
+        // Create and initialize a buffer object
+        
+        glGenBuffers(1, &buffer);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(points[i]) + sizeof(colors[i]), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points[i]), points[i]);
+        glBufferSubData(GL_ARRAY_BUFFER, sizeof(points[i]), sizeof(colors[i]), colors[i]);
 
+        // Load shaders and use the resulting shader program
+        
 
+        // set up vertex arrays
+        vPosition = glGetAttribLocation(program, "vPosition");
+        glEnableVertexAttribArray(vPosition);
+        glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 
-    //////////////
-    glBindVertexArray(vao[1]);
-
-    // Create and initialize a buffer object
-    GLuint buffer2;
-    glGenBuffers(1, &buffer2);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points[1]) + sizeof(colors[1]), NULL, GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points[1]), points[1]);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points[1]), sizeof(colors[1]), colors[1]);
-
-
-    // set up vertex arrays
-    GLuint vPosition1 = glGetAttribLocation(program, "vPosition");
-    glEnableVertexAttribArray(vPosition);
-    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-
-    GLuint vColor1 = glGetAttribLocation(program, "vColor");
-    glEnableVertexAttribArray(vColor);
-    glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points[1])));
+        vColor = glGetAttribLocation(program, "vColor");
+        glEnableVertexAttribArray(vColor);
+        glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points[i])));
+    }
 
 
 
-    ///////////
+    ////////////////
+    //glBindVertexArray(vao[1]);
+
+    //// Create and initialize a buffer object
+    //GLuint buffer2;
+    //glGenBuffers(1, &buffer2);
+    //glBindBuffer(GL_ARRAY_BUFFER, buffer2);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(points[1]) + sizeof(colors[1]), NULL, GL_STATIC_DRAW);
+    //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points[1]), points[1]);
+    //glBufferSubData(GL_ARRAY_BUFFER, sizeof(points[1]), sizeof(colors[1]), colors[1]);
+
+
+    //// set up vertex arrays
+    //vPosition = glGetAttribLocation(program, "vPosition");
+    //glEnableVertexAttribArray(vPosition);
+    //glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
+    //vColor = glGetAttribLocation(program, "vColor");
+    //glEnableVertexAttribArray(vColor);
+    //glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points[1])));
+
+    /////////////
 
 
     // Retrieve transformation uniform variable locations
@@ -207,29 +199,24 @@ void
 display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glBindVertexArray(vao[0]);
-    //  Generate tha model-view matrix
-    const vec3 displacement(0.0, 0.0, 0.0);
-    mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
-        RotateX(Theta[Xaxis]) *
-        RotateY(Theta[Yaxis]) *
-        RotateZ(Theta[Zaxis]));
 
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view);
+    for (int i = 0; i < NumSquares; i++) {
+        glBindVertexArray(vao[i]);
+        //  Generate tha model-view matrix
+        const vec3 displacement(4*spacingBetweenCubes-spacingBetweenCubes* i, 0.0, 0.0);
+        mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
+            RotateX(Theta[Xaxis]) *
+            RotateY(Theta[Yaxis]) *
+            RotateZ(Theta[Zaxis]));
 
-    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+        glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view);
 
-    glBindVertexArray(vao[1]);
-    //  Generate tha model-view matrix
-    const vec3 displacement2(0.0, 0.0, 0.0);
-    mat4 model_view2 = (Translate(displacement2) * Scale(1.0, 1.0, 1.0) *
-        RotateX(Theta[Xaxis]) *
-        RotateY(Theta[Yaxis]) *
-        RotateZ(Theta[Zaxis]));
+        glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+    }
 
-    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view2);
 
-    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+
+
 
     glutSwapBuffers();
 
