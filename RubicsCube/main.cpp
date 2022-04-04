@@ -41,12 +41,13 @@ color4 vertex_colors[8] = {
     color4(0.0, 1.0, 1.0, 1.0)   // cyan
 };
 color4 color_cycle[6] = {
-    color4(1.0, 0.5, 0.0, 1.0),  // orange
+    color4(1.0, 0.0, 1.0, 1.0),  // magenta
     color4(1.0, 0.0, 0.0, 1.0),  // red
     color4(1.0, 1.0, 0.0, 1.0),  // yellow
     color4(0.0, 0.0, 1.0, 1.0),  // blue
     color4(0.0, 1.0, 0.0, 1.0),  // green
-    color4(1.0, 0.0, 1.0, 1.0),  // magenta
+    
+    color4(1.0, 0.5, 0.0, 1.0),  // orange
 };
 
 // Array of rotation angles (in degrees) for each coordinate axis
@@ -96,11 +97,11 @@ colorcube(bool isMiddleObject, int cubeIndex)
 {
     quad(1, 0, 3, 2, true, cubeIndex);
     quad(2, 3, 7, 6, true, cubeIndex);
-    quad(3, 0, 4, 7, false, cubeIndex);
     quad(3, 0, 4, 7, true, cubeIndex);
-    quad(6, 5, 1, 2, false, cubeIndex);
-    quad(4, 5, 6, 7, false, cubeIndex);
-    quad(5, 4, 0, 1, false, cubeIndex);
+    quad(3, 0, 4, 7, true, cubeIndex);
+    quad(6, 5, 1, 2, true, cubeIndex);
+    quad(4, 5, 6, 7, true, cubeIndex);
+    quad(5, 4, 0, 1, true, cubeIndex);
     Index = 0;
     colorIndex = 0;
 }
@@ -151,31 +152,6 @@ init()
     }
 
 
-
-    ////////////////
-    //glBindVertexArray(vao[1]);
-
-    //// Create and initialize a buffer object
-    //GLuint buffer2;
-    //glGenBuffers(1, &buffer2);
-    //glBindBuffer(GL_ARRAY_BUFFER, buffer2);
-    //glBufferData(GL_ARRAY_BUFFER, sizeof(points[1]) + sizeof(colors[1]), NULL, GL_STATIC_DRAW);
-    //glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points[1]), points[1]);
-    //glBufferSubData(GL_ARRAY_BUFFER, sizeof(points[1]), sizeof(colors[1]), colors[1]);
-
-
-    //// set up vertex arrays
-    //vPosition = glGetAttribLocation(program, "vPosition");
-    //glEnableVertexAttribArray(vPosition);
-    //glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-
-    //vColor = glGetAttribLocation(program, "vColor");
-    //glEnableVertexAttribArray(vColor);
-    //glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points[1])));
-
-    /////////////
-
-
     // Retrieve transformation uniform variable locations
     ModelView = glGetUniformLocation(program, "ModelView");
     Projection = glGetUniformLocation(program, "Projection");
@@ -221,12 +197,13 @@ display(void)
             }
             else {
                 updatedY = startingY - startingY * int(i / 2)+ spacingBetweenCubes /5;
-                displacement = vec3(startingX, updatedY, startingZ - startingZ * int(i / 4)-0.4);
+                displacement = vec3(startingX, updatedY, startingZ - startingZ * int(i / 4)-spacingBetweenCubes/2-0.1);
 
             }
         }
         else {
-            displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180),updatedY- (spacingBetweenCubes* 90 / 180) - 0.05, startingZ+ (spacingBetweenCubes * 45 / 180)*i);
+            // 1,3,5,7 The cubes at right at creation.
+            displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180),updatedY- (spacingBetweenCubes* 90 / 180) - 0.05, startingZ - startingZ * int(i/2)* 1/2 - spacingBetweenCubes*int(i/2)+ 0.3);
         }
         //const vec3 displacement(2*spacingBetweenCubes-spacingBetweenCubes* (i / 2), spacingBetweenCubes * (i % 2), -spacingBetweenCubes * (i / 4));
         mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
@@ -347,7 +324,7 @@ int
 main(int argc, char** argv)
 {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
     glutInitWindowSize(512, 512);
     glutInitWindowPosition(50, 50);
     glutCreateWindow("Color Cube");
