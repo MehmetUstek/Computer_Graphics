@@ -8,13 +8,14 @@ typedef vec4  color4;
 typedef vec4  point4;
 
 const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
-const int NumSquares = 8;
+const int NumSquares = 4;
 const float scaleConst = 2.0f;
 const float squareWidth = 0.5f;
 const float spacingBetweenCubes = squareWidth * 2;
 
 point4 points[NumSquares][NumVertices];
 color4 colors[NumSquares][NumVertices];
+const int xoff = 1, yoff = 4, zoff = 16;
 
 // Vertices of a unit cube centered at origin, sides aligned with axes
 point4 vertices[8] = {
@@ -50,11 +51,12 @@ color4 color_cycle[6] = {
 
 // Array of rotation angles (in degrees) for each coordinate axis
 enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
-int  Axis = Xaxis;
-GLfloat  Theta[NumAxes] = { 135.0, 0.0, 45.0 };
+int  Axis = Zaxis;
+GLfloat  Theta[NumAxes] = { 135.0, 0.0, 135.0 };
 
 // Model-view and projection matrices uniform location
-GLuint  ModelView, Projection;
+GLuint ModelView, Projection;
+GLuint Color;
 
 //----------------------------------------------------------------------------
 
@@ -94,12 +96,8 @@ colorcube(bool isMiddleObject, int cubeIndex)
 {
     quad(1, 0, 3, 2, true, cubeIndex);
     quad(2, 3, 7, 6, true, cubeIndex);
-    if (isMiddleObject) {
-        quad(3, 0, 4, 7, false, cubeIndex);
-    }
-    else {
-        quad(3, 0, 4, 7, true, cubeIndex);
-    }
+    quad(3, 0, 4, 7, false, cubeIndex);
+    quad(3, 0, 4, 7, true, cubeIndex);
     quad(6, 5, 1, 2, false, cubeIndex);
     quad(4, 5, 6, 7, false, cubeIndex);
     quad(5, 4, 0, 1, false, cubeIndex);
@@ -114,6 +112,7 @@ colorcube(bool isMiddleObject, int cubeIndex)
 GLuint vao[NumSquares];
 GLuint vPosition, vColor;
 GLuint buffer;
+mat4 model_view[NumSquares];
 void
 init()
 {
@@ -146,6 +145,9 @@ init()
         vColor = glGetAttribLocation(program, "vColor");
         glEnableVertexAttribArray(vColor);
         glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points[i])));
+
+        model_view[i] = identity();
+        glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[i]);
     }
 
 
@@ -186,6 +188,8 @@ init()
     // Set current program object
     glUseProgram(program);
 
+
+    Color = glGetUniformLocation(program, "color");
     // Enable hiddden surface removal
     glEnable(GL_DEPTH_TEST);
 
@@ -199,11 +203,32 @@ void
 display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    float startingX = -spacingBetweenCubes;
+    float startingY = +spacingBetweenCubes;
+    float startingZ = -spacingBetweenCubes;
+    float updatedY = startingY;
     for (int i = 0; i < NumSquares; i++) {
         glBindVertexArray(vao[i]);
         //  Generate tha model-view matrix
-        const vec3 displacement(4*spacingBetweenCubes-spacingBetweenCubes* i, 0.0, 0.0);
+        vec3 displacement;
+        
+        if (i == 0) {
+            displacement = vec3(startingX, startingY, startingZ);
+        }
+        else if (i % 2 == 0) {
+            if (i % 4 == 0) {
+
+            }
+            else {
+                updatedY = startingY - startingY * int(i / 2)+ spacingBetweenCubes /5;
+                displacement = vec3(startingX, updatedY, startingZ - startingZ * int(i / 4)-0.4);
+
+            }
+        }
+        else {
+            displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180),updatedY- (spacingBetweenCubes* 90 / 180) - 0.05, startingZ+ (spacingBetweenCubes * 45 / 180)*i);
+        }
+        //const vec3 displacement(2*spacingBetweenCubes-spacingBetweenCubes* (i / 2), spacingBetweenCubes * (i % 2), -spacingBetweenCubes * (i / 4));
         mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
             RotateX(Theta[Xaxis]) *
             RotateY(Theta[Yaxis]) *
@@ -273,12 +298,32 @@ keyboard(unsigned char key, int x, int y)
 
 void mouse(int button, int state, int x, int y)
 {
-    if (state == GLUT_DOWN) {
-        switch (button) {
-        case GLUT_LEFT_BUTTON:    Axis = Xaxis;  break;
-        case GLUT_MIDDLE_BUTTON:  Axis = Yaxis;  break;
-        case GLUT_RIGHT_BUTTON:   Axis = Zaxis;  break;
-        }
+    if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON) {
+        //glDrawBuffer(GL_BACK); //back buffer is default thus no need
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        //Render triangles with different id colors to back buffer
+        glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[NumSquares]);
+        glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+
+        glFlush();
+
+        y = glutGet(GLUT_WINDOW_HEIGHT) - y;
+
+        unsigned char pixel[4];
+        glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
+        if (pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0) std::cout << "First triangle" << std::endl;
+        else if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) std::cout << "Second triangle" << std::endl;
+        else std::cout << "None" << std::endl;
+
+        std::cout << "R: " << (int)pixel[0] << std::endl;
+        std::cout << "G: " << (int)pixel[1] << std::endl;
+        std::cout << "B: " << (int)pixel[2] << std::endl;
+        std::cout << std::endl;
+
+        glutSwapBuffers(); //you can enable this to display the triangles with their hidden id colors
+
     }
 }
 
@@ -286,10 +331,10 @@ void mouse(int button, int state, int x, int y)
 void timer(int p)
 {
     
-    Theta[Axis] += 1.0;
+    /*Theta[Axis] += 1.0;
     if (Theta[Axis] > 360.0) {
         Theta[Axis] -= 360.0;
-    }
+    }*/
     glutPostRedisplay();
 
     glutTimerFunc(20.0, timer, 0);
