@@ -11,7 +11,7 @@ const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 const int NumSquares = 8;
 const float scaleConst = 2.0f;
 const float squareWidth = 0.5f;
-const float spacingBetweenCubes = squareWidth * 2;
+const float spacingBetweenCubes = squareWidth * 2+ 0.05;
 
 point4 points[NumSquares][NumVertices];
 color4 colors[NumSquares][NumVertices];
@@ -53,7 +53,7 @@ color4 color_cycle[6] = {
 // Array of rotation angles (in degrees) for each coordinate axis
 enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 int  Axis = Zaxis;
-GLfloat  Theta[NumAxes] = { 135.0, 0.0, 135.0 };
+GLfloat  Theta[NumAxes] = { 10.0, -10.0, 0.0 };
 
 // Model-view and projection matrices uniform location
 GLuint ModelView, Projection;
@@ -180,37 +180,71 @@ display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     float startingX = -spacingBetweenCubes;
-    float startingY = +spacingBetweenCubes;
-    float startingZ = -spacingBetweenCubes;
+    float startingY = -spacingBetweenCubes;
+    float startingZ = +spacingBetweenCubes;
     float updatedY = startingY;
     for (int i = 0; i < NumSquares; i++) {
         glBindVertexArray(vao[i]);
         //  Generate tha model-view matrix
         vec3 displacement;
-        
         if (i == 0) {
             displacement = vec3(startingX, startingY, startingZ);
         }
-        else if (i % 2 == 0) {
+        else if (i % 2 ==0) {
             if (i % 4 == 0) {
-                //startingX = startingX + (spacingBetweenCubes * 135 / 180);
-                startingX = startingX + (spacingBetweenCubes * 45 / 180);
-                startingY = updatedY - (spacingBetweenCubes * 90 / 180) - 0.05;
-                //displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180), updatedY, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
-                displacement = vec3(startingX , updatedY, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
+                startingZ = startingZ -2* spacingBetweenCubes;
+                updatedY = startingY + spacingBetweenCubes / 4;
+                startingX = startingX + spacingBetweenCubes / 4;
+                displacement = vec3(startingX, updatedY, startingZ);
 
             }
             else {
-                updatedY = startingY - startingY * int(i / 2)+ spacingBetweenCubes /5;
-                displacement = vec3(startingX, updatedY, startingZ - startingZ * int(i / 4)-spacingBetweenCubes/2-0.1);
-
+                updatedY = updatedY + spacingBetweenCubes;
+                displacement = vec3(startingX, updatedY, startingZ);
             }
+            
         }
         else {
             // 1,3,5,7 The cubes at right at creation.
-            displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180),updatedY- (spacingBetweenCubes* 90 / 180) - 0.05, startingZ - startingZ * int(i/2)* 1/2 - spacingBetweenCubes*int(i/2)+ 0.3);
-            
+            displacement = vec3(startingX + (spacingBetweenCubes),updatedY, startingZ);
         }
+        
+        //if (i == 0) {
+        //    displacement = vec3(startingX, startingY, startingZ);
+        //}
+        //else if (i % 2 == 0) {
+        //    if (i % 4 == 0) {
+        //        //startingX = startingX + (spacingBetweenCubes * 135 / 180);
+        //        startingX = startingX + (spacingBetweenCubes * 135 / 180);
+        //        updatedY = updatedY + (spacingBetweenCubes * 90 / 180);
+        //        //startingY = startingY - spacingBetweenCubes*1.5;
+        //        //startingY = startingY + (spacingBetweenCubes * 90 / 180);
+        //        //displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180), updatedY, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
+        //        displacement = vec3(startingX , updatedY, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
+
+        //    }
+        //    else {
+        //        // Cubes 2,6
+        //        //updatedY = startingY - startingY * int(i / 2)+ spacingBetweenCubes /5;
+        //        if (i == 2) {
+        //            updatedY = -updatedY + int(i / 2) + spacingBetweenCubes / 4;
+        //            displacement = vec3(startingX, updatedY, startingZ - startingZ * int(i / 4) - spacingBetweenCubes / 2 - 0.1);
+        //        }
+        //        else if (i == 6) {
+        //            updatedY = -updatedY + int(i / 2)-spacingBetweenCubes/2;
+        //            displacement = vec3(startingX, updatedY, startingZ + startingZ * int(i / 4) + spacingBetweenCubes / 2 + 0.1);
+        //        }
+
+        //    }
+        //}
+        //else {
+        //    // 1,3,5,7 The cubes at right at creation.
+        //    displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180),updatedY- (spacingBetweenCubes* 90 / 180) - 0.05, startingZ - startingZ * int(i/2)* 1/2 - spacingBetweenCubes*int(i/2)+ 0.3);
+        //    if (i == 7) {
+        //        displacement = vec3(startingX + (spacingBetweenCubes * 90 / 180), updatedY + (spacingBetweenCubes * 90 / 180) - 0.05, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
+
+        //    }
+        //}
         //const vec3 displacement(2*spacingBetweenCubes-spacingBetweenCubes* (i / 2), spacingBetweenCubes * (i % 2), -spacingBetweenCubes * (i / 4));
         mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
             RotateX(Theta[Xaxis]) *
@@ -277,33 +311,40 @@ keyboard(unsigned char key, int x, int y)
 
 void mouse(int button, int state, int x, int y)
 {
-    if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON) {
-        //glDrawBuffer(GL_BACK); //back buffer is default thus no need
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        //Render triangles with different id colors to back buffer
-        glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[NumSquares]);
-        glDrawArrays(GL_TRIANGLES, 0, NumVertices);
-
-        glFlush();
-
-        y = glutGet(GLUT_WINDOW_HEIGHT) - y;
-
-        unsigned char pixel[4];
-        glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
-        if (pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0) std::cout << "First triangle" << std::endl;
-        else if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) std::cout << "Second triangle" << std::endl;
-        else std::cout << "None" << std::endl;
-
-        std::cout << "R: " << (int)pixel[0] << std::endl;
-        std::cout << "G: " << (int)pixel[1] << std::endl;
-        std::cout << "B: " << (int)pixel[2] << std::endl;
-        std::cout << std::endl;
-
-        glutSwapBuffers(); //you can enable this to display the triangles with their hidden id colors
-
+    if (state == GLUT_DOWN) {
+        switch (button) {
+        case GLUT_LEFT_BUTTON:    Axis = Xaxis;  break;
+        case GLUT_MIDDLE_BUTTON:  Axis = Yaxis;  break;
+        case GLUT_RIGHT_BUTTON:   Axis = Zaxis;  break;
+        }
     }
+    //if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON) {
+    //    //glDrawBuffer(GL_BACK); //back buffer is default thus no need
+
+    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //    //Render triangles with different id colors to back buffer
+    //    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[NumSquares]);
+    //    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+
+    //    glFlush();
+
+    //    y = glutGet(GLUT_WINDOW_HEIGHT) - y;
+
+    //    unsigned char pixel[4];
+    //    glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
+    //    if (pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0) std::cout << "First triangle" << std::endl;
+    //    else if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) std::cout << "Second triangle" << std::endl;
+    //    else std::cout << "None" << std::endl;
+
+    //    std::cout << "R: " << (int)pixel[0] << std::endl;
+    //    std::cout << "G: " << (int)pixel[1] << std::endl;
+    //    std::cout << "B: " << (int)pixel[2] << std::endl;
+    //    std::cout << std::endl;
+
+    //    glutSwapBuffers(); //you can enable this to display the triangles with their hidden id colors
+
+    //}
 }
 
 //----------------------------------------------------------------------------
