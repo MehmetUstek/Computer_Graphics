@@ -8,7 +8,7 @@ typedef vec4  color4;
 typedef vec4  point4;
 
 const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
-const int NumSquares = 4;
+const int NumSquares = 8;
 const float scaleConst = 2.0f;
 const float squareWidth = 0.5f;
 const float spacingBetweenCubes = squareWidth * 2;
@@ -193,6 +193,11 @@ display(void)
         }
         else if (i % 2 == 0) {
             if (i % 4 == 0) {
+                //startingX = startingX + (spacingBetweenCubes * 135 / 180);
+                startingX = startingX + (spacingBetweenCubes * 45 / 180);
+                startingY = updatedY - (spacingBetweenCubes * 90 / 180) - 0.05;
+                //displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180), updatedY, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
+                displacement = vec3(startingX , updatedY, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
 
             }
             else {
@@ -204,6 +209,7 @@ display(void)
         else {
             // 1,3,5,7 The cubes at right at creation.
             displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180),updatedY- (spacingBetweenCubes* 90 / 180) - 0.05, startingZ - startingZ * int(i/2)* 1/2 - spacingBetweenCubes*int(i/2)+ 0.3);
+            
         }
         //const vec3 displacement(2*spacingBetweenCubes-spacingBetweenCubes* (i / 2), spacingBetweenCubes * (i % 2), -spacingBetweenCubes * (i / 4));
         mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
@@ -215,10 +221,6 @@ display(void)
 
         glDrawArrays(GL_TRIANGLES, 0, NumVertices);
     }
-
-
-
-
 
     glutSwapBuffers();
 
