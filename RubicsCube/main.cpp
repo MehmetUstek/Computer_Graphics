@@ -193,8 +193,8 @@ display(void)
         else if (i % 2 ==0) {
             if (i % 4 == 0) {
                 startingZ = startingZ -2* spacingBetweenCubes;
-                updatedY = startingY + spacingBetweenCubes / 4;
-                startingX = startingX + spacingBetweenCubes / 4;
+                updatedY = startingY - float(Theta[Yaxis]/90)*2;
+                startingX = startingX + float(Theta[Xaxis] / 90)*2;
                 displacement = vec3(startingX, updatedY, startingZ);
 
             }
