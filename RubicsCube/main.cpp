@@ -13,8 +13,8 @@ const float scaleConst = 2.0f;
 const float squareWidth = 0.5f;
 const float spacingBetweenCubes = squareWidth * 2+ 0.05;
 
-point4 points[NumSquares][NumVertices];
-color4 colors[NumSquares][NumVertices];
+point4 points[NumSquares+1][NumVertices];
+color4 colors[NumSquares+1][NumVertices];
 const int xoff = 1, yoff = 4, zoff = 16;
 
 // Vertices of a unit cube centered at origin, sides aligned with axes
@@ -41,12 +41,11 @@ color4 vertex_colors[8] = {
     color4(0.0, 1.0, 1.0, 1.0)   // cyan
 };
 color4 color_cycle[6] = {
-    color4(1.0, 0.0, 1.0, 1.0),  // magenta
+    color4(0.0, 0.0, 1.0, 1.0),  // blue
     color4(1.0, 0.0, 0.0, 1.0),  // red
     color4(1.0, 1.0, 0.0, 1.0),  // yellow
-    color4(0.0, 0.0, 1.0, 1.0),  // blue
+    color4(1.0, 0.0, 1.0, 1.0),  // magenta
     color4(0.0, 1.0, 0.0, 1.0),  // green
-    
     color4(1.0, 0.5, 0.0, 1.0),  // orange
 };
 
@@ -111,19 +110,19 @@ colorcube(bool isMiddleObject, int cubeIndex)
 // OpenGL initialization
 bool topFaceClockwise = false; bool topFaceCounterClockwise = false;
 bool rightFaceClockwise = false; bool rightFaceCounterClockwise = false;
-bool frontFaceClockwise = false; bool frontFaceCounterClockwise = false;
+bool leftFaceClockwise = false; bool leftFaceCounterClockwise = false;
 bool turn_up = false; bool turn_down = false; bool turn_right = false; bool turn_left = false;
 
-GLuint vao[NumSquares];
+GLuint vao[NumSquares+1];
 GLuint vPosition, vColor;
 GLuint buffer;
-mat4 model_view[NumSquares];
+mat4 model_view[NumSquares+1];
 void
 init()
 {
     glGenVertexArrays(NumSquares, vao);
     GLuint program = InitShader("vshader.glsl", "fshader.glsl");
-    for (int i = 0; i < NumSquares; i++) {
+    for (int i = 0; i < NumSquares+1; i++) {
         colorcube(false, i);
 
         // Create a vertex array object
@@ -187,12 +186,15 @@ display(void)
     float startingY = -spacingBetweenCubes;
     float startingZ = -spacingBetweenCubes;
     float updatedY = startingY;
+    vec3 bigCubedisplacement;
     for (int i = 0; i < NumSquares; i++) {
         glBindVertexArray(vao[i]);
         //  Generate tha model-view matrix
         vec3 displacement;
+        
         if (i == 0) {
             displacement = vec3(startingX, startingY, startingZ);
+            bigCubedisplacement = displacement;
         }
         else if (i % 2 ==0) {
             if (i % 4 == 0) {
@@ -213,14 +215,15 @@ display(void)
             // 1,3,5,7 The cubes at right at creation.
             displacement = vec3(startingX + (spacingBetweenCubes*float(Theta[Xaxis] / 45)), updatedY + spacingBetweenCubes *  float(Theta[Yaxis] / 135), startingZ+0.6);
         }
-        
-        mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
+        mat4 model_view;
+        model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
             RotateX(Theta[Xaxis]) *
             RotateY(Theta[Yaxis]) *
             RotateZ(Theta[Zaxis]));
-
+        
         glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view);
 
+        // Dont draw if it is the big cube. Draw only when mouse is clicked and immediately flush it so the user dont see.
         glDrawArrays(GL_TRIANGLES, 0, NumVertices);
     }
 
@@ -283,11 +286,15 @@ keyboard(unsigned char key, int x, int y)
 
 void mouse(int button, int state, int x, int y) {
     if (state == GLUT_DOWN && button == GLUT_RIGHT_BUTTON) {
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(vao[8]);
-        model_view[8] = (RotateX(45.0) * RotateY(-45.0) * RotateZ(0.0));
+        model_view[8] = (Translate(vec3(-spacingBetweenCubes / 2 + 0.1, -spacingBetweenCubes / 2, 0.8)) * Scale(2.0, 2.0, 1.0) *
+            RotateX(Theta[Xaxis]) *
+            RotateY(Theta[Yaxis]) *
+            RotateZ(Theta[Zaxis]));
         glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[8]);
-        glDrawArrays(GL_TRIANGLES, 0, 288);
+        glDrawArrays(GL_TRIANGLES, 0, NumVertices);
         glFlush();
 
         y = glutGet(GLUT_WINDOW_HEIGHT) - y;
@@ -295,39 +302,60 @@ void mouse(int button, int state, int x, int y) {
         glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
 
         if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) {
-            topFaceClockwise = true; 
-            std::cout << "TopfaceClockwise Clicked" << std::endl;
-        }
-        if (pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0) {
-            frontFaceClockwise = true;
-            std::cout << "FrontfaceClockwise Clicked" << std::endl;
-        }
-        if (pixel[0] == 255 && pixel[1] == 255 && pixel[2] == 255) {
-            rightFaceClockwise = true;
-            std::cout << "RightfaceClockwise Clicked" << std::endl;
-        }
+            leftFaceCounterClockwise = true;
+            std::cout << "LeftfaceCounterClockwise Clicked" << std::endl;
 
-        glutPostRedisplay();
+        }
+        else if (pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0) {
+            topFaceCounterClockwise = true;
+            std::cout << "TopfaceCounterClockwise Clicked" << std::endl;
+
+        }
+        else if (pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0) {
+            rightFaceCounterClockwise = true;
+            std::cout << "RightfaceCounterClockwise Clicked" << std::endl;
+
+        }
+        //glutSwapBuffers();
+
+        //glutPostRedisplay();
 
     }
 
     else if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(vao[8]);
-        model_view[8] = (RotateX(45.0) * RotateY(-45.0) * RotateZ(0.0));
+        model_view[8] = (Translate(vec3(-spacingBetweenCubes / 2 + 0.1, -spacingBetweenCubes / 2, 0.8)) * Scale(2.0, 2.0, 1.0) *
+            RotateX(Theta[Xaxis]) *
+            RotateY(Theta[Yaxis]) *
+            RotateZ(Theta[Zaxis]));
         glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[8]);
-        glDrawArrays(GL_TRIANGLES, 0, 288);
+        glDrawArrays(GL_TRIANGLES, 0, NumVertices);
         glFlush();
 
-        unsigned char pixel[4];
+        
         y = glutGet(GLUT_WINDOW_HEIGHT) - y;
+        unsigned char pixel[4];
         glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
 
-        if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) topFaceCounterClockwise = true;
-        if (pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0) frontFaceCounterClockwise = true;
-        if (pixel[0] == 255 && pixel[1] == 255 && pixel[2] == 255) rightFaceCounterClockwise = true;
+        if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) {
+            leftFaceCounterClockwise = true;
+            std::cout << "LeftfaceCounterClockwise Clicked" << std::endl;
 
-        glutPostRedisplay();
+        }
+        else if (pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0) {
+            topFaceCounterClockwise = true;
+            std::cout << "TopfaceCounterClockwise Clicked" << std::endl;
+
+        }
+        else if (pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0) {
+            rightFaceCounterClockwise = true;
+            std::cout << "RightfaceCounterClockwise Clicked" << std::endl;
+
+        }
+        //glutSwapBuffers();
+
+        //glutPostRedisplay();
     }
 }
 
@@ -340,7 +368,7 @@ void timer(int p)
     if (Theta[Axis] > 360.0) {
         Theta[Axis] -= 360.0;
     }*/
-    glutPostRedisplay();
+    //glutPostRedisplay();
 
     glutTimerFunc(20.0, timer, 0);
 }
