@@ -53,7 +53,7 @@ color4 color_cycle[6] = {
 // Array of rotation angles (in degrees) for each coordinate axis
 enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 int  Axis = Zaxis;
-GLfloat  Theta[NumAxes] = { 10.0, -10.0, 0.0 };
+GLfloat  Theta[NumAxes] = { 30.0, -45.0, 0.0 };
 
 // Model-view and projection matrices uniform location
 GLuint ModelView, Projection;
@@ -181,7 +181,7 @@ display(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     float startingX = -spacingBetweenCubes;
     float startingY = -spacingBetweenCubes;
-    float startingZ = +spacingBetweenCubes;
+    float startingZ = -spacingBetweenCubes;
     float updatedY = startingY;
     for (int i = 0; i < NumSquares; i++) {
         glBindVertexArray(vao[i]);
@@ -192,21 +192,22 @@ display(void)
         }
         else if (i % 2 ==0) {
             if (i % 4 == 0) {
-                startingZ = startingZ -2* spacingBetweenCubes;
-                updatedY = startingY - float(Theta[Yaxis]/90)*2;
+                startingZ = startingZ - spacingBetweenCubes;
+                updatedY = startingY -spacingBetweenCubes * float(Theta[Yaxis]/140);
                 startingX = startingX + float(Theta[Xaxis] / 90)*2;
                 displacement = vec3(startingX, updatedY, startingZ);
 
             }
             else {
-                updatedY = updatedY + spacingBetweenCubes;
+                updatedY = updatedY + spacingBetweenCubes * -float(Theta[Yaxis] / 50);
+                startingZ += 0.4;
                 displacement = vec3(startingX, updatedY, startingZ);
             }
             
         }
         else {
             // 1,3,5,7 The cubes at right at creation.
-            displacement = vec3(startingX + (spacingBetweenCubes),updatedY, startingZ);
+            displacement = vec3(startingX + (spacingBetweenCubes*float(Theta[Xaxis] / 45)), updatedY + spacingBetweenCubes *  float(Theta[Yaxis] / 135), startingZ+0.6);
         }
         
         //if (i == 0) {
