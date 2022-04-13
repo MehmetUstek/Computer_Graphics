@@ -215,17 +215,28 @@ display(void)
             // 1,3,5,7 The cubes at right at creation.
             displacement = vec3(startingX + (spacingBetweenCubes*float(Theta[Xaxis] / 45)), updatedY + spacingBetweenCubes *  float(Theta[Yaxis] / 135), startingZ+0.6);
         }
-        mat4 model_view;
-        model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
+        model_view[i] = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
             RotateX(Theta[Xaxis]) *
             RotateY(Theta[Yaxis]) *
             RotateZ(Theta[Zaxis]));
+
         
-        glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view);
+        
+        glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[i]);
 
         // Dont draw if it is the big cube. Draw only when mouse is clicked and immediately flush it so the user dont see.
         glDrawArrays(GL_TRIANGLES, 0, NumVertices);
     }
+
+    //TODO: Left point
+    if (turn_down) {
+            model_view[2] = RotateX(-45.0) * model_view[2];
+            std::cout << "Turn down";
+            turn_down = false;
+            glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[2]);
+            glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+    }
+
 
     glutSwapBuffers();
 
@@ -278,6 +289,9 @@ keyboard(unsigned char key, int x, int y)
     if (key == 's' | key == 'S') turn_down = true;
     if (key == 'a' | key == 'A') turn_left = true;
     if (key == 'd' | key == 'D') turn_right = true;
+
+    //TODO: Check if needed in here.
+    glutPostRedisplay();
 
 
 }
