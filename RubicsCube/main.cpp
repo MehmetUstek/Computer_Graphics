@@ -109,6 +109,10 @@ colorcube(bool isMiddleObject, int cubeIndex)
 //----------------------------------------------------------------------------
 
 // OpenGL initialization
+bool topFaceClockwise = false; bool topFaceCounterClockwise = false;
+bool rightFaceClockwise = false; bool rightFaceCounterClockwise = false;
+bool frontFaceClockwise = false; bool frontFaceCounterClockwise = false;
+bool turn_up = false; bool turn_down = false; bool turn_right = false; bool turn_left = false;
 
 GLuint vao[NumSquares];
 GLuint vPosition, vColor;
@@ -210,43 +214,6 @@ display(void)
             displacement = vec3(startingX + (spacingBetweenCubes*float(Theta[Xaxis] / 45)), updatedY + spacingBetweenCubes *  float(Theta[Yaxis] / 135), startingZ+0.6);
         }
         
-        //if (i == 0) {
-        //    displacement = vec3(startingX, startingY, startingZ);
-        //}
-        //else if (i % 2 == 0) {
-        //    if (i % 4 == 0) {
-        //        //startingX = startingX + (spacingBetweenCubes * 135 / 180);
-        //        startingX = startingX + (spacingBetweenCubes * 135 / 180);
-        //        updatedY = updatedY + (spacingBetweenCubes * 90 / 180);
-        //        //startingY = startingY - spacingBetweenCubes*1.5;
-        //        //startingY = startingY + (spacingBetweenCubes * 90 / 180);
-        //        //displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180), updatedY, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
-        //        displacement = vec3(startingX , updatedY, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
-
-        //    }
-        //    else {
-        //        // Cubes 2,6
-        //        //updatedY = startingY - startingY * int(i / 2)+ spacingBetweenCubes /5;
-        //        if (i == 2) {
-        //            updatedY = -updatedY + int(i / 2) + spacingBetweenCubes / 4;
-        //            displacement = vec3(startingX, updatedY, startingZ - startingZ * int(i / 4) - spacingBetweenCubes / 2 - 0.1);
-        //        }
-        //        else if (i == 6) {
-        //            updatedY = -updatedY + int(i / 2)-spacingBetweenCubes/2;
-        //            displacement = vec3(startingX, updatedY, startingZ + startingZ * int(i / 4) + spacingBetweenCubes / 2 + 0.1);
-        //        }
-
-        //    }
-        //}
-        //else {
-        //    // 1,3,5,7 The cubes at right at creation.
-        //    displacement = vec3(startingX + (spacingBetweenCubes * 135 / 180),updatedY- (spacingBetweenCubes* 90 / 180) - 0.05, startingZ - startingZ * int(i/2)* 1/2 - spacingBetweenCubes*int(i/2)+ 0.3);
-        //    if (i == 7) {
-        //        displacement = vec3(startingX + (spacingBetweenCubes * 90 / 180), updatedY + (spacingBetweenCubes * 90 / 180) - 0.05, startingZ - startingZ * int(i / 2) * 1 / 2 - spacingBetweenCubes * int(i / 2) + 0.3);
-
-        //    }
-        //}
-        //const vec3 displacement(2*spacingBetweenCubes-spacingBetweenCubes* (i / 2), spacingBetweenCubes * (i % 2), -spacingBetweenCubes * (i / 4));
         mat4 model_view = (Translate(displacement) * Scale(1.0, 1.0, 1.0) *
             RotateX(Theta[Xaxis]) *
             RotateY(Theta[Yaxis]) *
@@ -303,50 +270,67 @@ idle(void)
 void
 keyboard(unsigned char key, int x, int y)
 {
-    if (key == 'Q' | key == 'q')
-        exit(0);
+    if (key == 'Q' | key == 'q') exit(0);
+    if (key == 'w' | key == 'W') turn_up = true;
+    if (key == 's' | key == 'S') turn_down = true;
+    if (key == 'a' | key == 'A') turn_left = true;
+    if (key == 'd' | key == 'D') turn_right = true;
+
 
 }
 
 //----------------------------------------------------------------------------
 
-void mouse(int button, int state, int x, int y)
-{
-    if (state == GLUT_DOWN) {
-        switch (button) {
-        case GLUT_LEFT_BUTTON:    Axis = Xaxis;  break;
-        case GLUT_MIDDLE_BUTTON:  Axis = Yaxis;  break;
-        case GLUT_RIGHT_BUTTON:   Axis = Zaxis;  break;
+void mouse(int button, int state, int x, int y) {
+    if (state == GLUT_DOWN && button == GLUT_RIGHT_BUTTON) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindVertexArray(vao[8]);
+        model_view[8] = (RotateX(45.0) * RotateY(-45.0) * RotateZ(0.0));
+        glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[8]);
+        glDrawArrays(GL_TRIANGLES, 0, 288);
+        glFlush();
+
+        y = glutGet(GLUT_WINDOW_HEIGHT) - y;
+        unsigned char pixel[4];
+        glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
+
+        if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) {
+            topFaceClockwise = true; 
+            std::cout << "TopfaceClockwise Clicked" << std::endl;
         }
+        if (pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0) {
+            frontFaceClockwise = true;
+            std::cout << "FrontfaceClockwise Clicked" << std::endl;
+        }
+        if (pixel[0] == 255 && pixel[1] == 255 && pixel[2] == 255) {
+            rightFaceClockwise = true;
+            std::cout << "RightfaceClockwise Clicked" << std::endl;
+        }
+
+        glutPostRedisplay();
+
     }
-    //if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON) {
-    //    //glDrawBuffer(GL_BACK); //back buffer is default thus no need
 
-    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    else if (state == GLUT_DOWN && button == GLUT_LEFT_BUTTON) {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindVertexArray(vao[8]);
+        model_view[8] = (RotateX(45.0) * RotateY(-45.0) * RotateZ(0.0));
+        glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[8]);
+        glDrawArrays(GL_TRIANGLES, 0, 288);
+        glFlush();
 
-    //    //Render triangles with different id colors to back buffer
-    //    glUniformMatrix4fv(ModelView, 1, GL_TRUE, model_view[NumSquares]);
-    //    glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+        unsigned char pixel[4];
+        y = glutGet(GLUT_WINDOW_HEIGHT) - y;
+        glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
 
-    //    glFlush();
+        if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) topFaceCounterClockwise = true;
+        if (pixel[0] == 255 && pixel[1] == 0 && pixel[2] == 0) frontFaceCounterClockwise = true;
+        if (pixel[0] == 255 && pixel[1] == 255 && pixel[2] == 255) rightFaceCounterClockwise = true;
 
-    //    y = glutGet(GLUT_WINDOW_HEIGHT) - y;
-
-    //    unsigned char pixel[4];
-    //    glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
-    //    if (pixel[0] == 0 && pixel[1] == 255 && pixel[2] == 0) std::cout << "First triangle" << std::endl;
-    //    else if (pixel[0] == 0 && pixel[1] == 0 && pixel[2] == 255) std::cout << "Second triangle" << std::endl;
-    //    else std::cout << "None" << std::endl;
-
-    //    std::cout << "R: " << (int)pixel[0] << std::endl;
-    //    std::cout << "G: " << (int)pixel[1] << std::endl;
-    //    std::cout << "B: " << (int)pixel[2] << std::endl;
-    //    std::cout << std::endl;
-
-    //    glutSwapBuffers(); //you can enable this to display the triangles with their hidden id colors
-
-    //}
+        glutPostRedisplay();
+    }
 }
+
 
 //----------------------------------------------------------------------------
 void timer(int p)
