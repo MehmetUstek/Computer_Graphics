@@ -5,11 +5,13 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include "DrawingType.cpp"
 
 // The drawing mode controller
 bool isSolid = true;
 // Initial object -> cube, then with mouse click, sphere, and then bunny.
 ObjectType object_type = ObjectType::CUBE;
+DrawingType drawing_type = DrawingType::WIREFRAME;
 // Window sizes:
 GLsizei width = 760;
 GLsizei height = 760;
@@ -330,12 +332,15 @@ display( void )
         glBufferData(GL_ARRAY_BUFFER, sizeof(points) + sizeof(colors), NULL, GL_STATIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points), points);
         glBufferSubData(GL_ARRAY_BUFFER, sizeof(points), sizeof(colors), colors);
-        if (isSolid) {
-            glDrawElements(GL_TRIANGLES, NumVertices, GL_UNSIGNED_INT, 0);
-        }
-        // Wireframe
-        else {
+        switch (drawing_type)
+        {
+        case DrawingType::WIREFRAME:
             glDrawElements(GL_LINE_LOOP, NumVertices, GL_UNSIGNED_INT, 0);
+            break;
+        case DrawingType::SOLID:
+            glDrawElements(GL_TRIANGLES, NumVertices, GL_UNSIGNED_INT, 0);
+            break;
+
         }
         model_view = (Translate(displacement) * Scale(scale, scale, scale));
         break;
@@ -351,13 +356,23 @@ display( void )
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
         glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
             sizeof(colors_sphere), colors_sphere);
-        if (isSolid) {
-            glDrawElements(GL_TRIANGLES, NumVertices_sphere, GL_UNSIGNED_INT, 0);
-        }
-        // Wireframe
-        else {
+        switch (drawing_type)
+        {
+        case DrawingType::WIREFRAME:
             glDrawElements(GL_LINE_LOOP, NumVertices_sphere, GL_UNSIGNED_INT, 0);
+            break;
+        case DrawingType::SOLID:
+            glDrawElements(GL_TRIANGLES, NumVertices_sphere, GL_UNSIGNED_INT, 0);
+            break;
+
         }
+        //if (isSolid) {
+        //    glDrawElements(GL_TRIANGLES, NumVertices_sphere, GL_UNSIGNED_INT, 0);
+        //}
+        //// Wireframe
+        //else {
+        //    glDrawElements(GL_LINE_LOOP, NumVertices_sphere, GL_UNSIGNED_INT, 0);
+        //}
         
         model_view = (Translate(displacement) * Scale(scale, scale, scale));
         break;
@@ -372,12 +387,15 @@ display( void )
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertex_list_bunny), vertex_list_bunny);
         glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertex_list_bunny),
             sizeof(colors_bunny), colors_bunny);
-        if (isSolid) {
-            glDrawElements(GL_TRIANGLES, numTriangles_bunny*3, GL_UNSIGNED_INT, 0);
-        }
-        // Wireframe
-        else {
+        switch (drawing_type)
+        {
+        case DrawingType::WIREFRAME:
             glDrawElements(GL_LINE_LOOP, numTriangles_bunny*3, GL_UNSIGNED_INT, 0);
+            break;
+        case DrawingType::SOLID:
+            glDrawElements(GL_TRIANGLES, numTriangles_bunny * 3, GL_UNSIGNED_INT, 0);
+            break;
+
         }
 
         model_view = (Translate(displacement) * Scale(scale / 8, scale / 8, scale / 8));
@@ -423,16 +441,12 @@ keyboard( unsigned char key,int x, int y )
         break;
     case 'h': case 'H':
         cout << "-h: Help:" << endl << "-q: Quit program" << endl << "-i: Initilization of the animation, starting from the top left corner" << endl;
-        cout << "-d: Change drawing mode between solid and wireframe" << endl;
         cout << "Change object type with mouse Events:" << endl << " Left click for changing between the objects, starting from cube, then sphere and lastly the bunny" << endl << " The objects will circle back to cube after bunny" << endl;
         cout << "Change color with numpad actions from 1-8:" << endl;
         cout << "  1: Black" << endl << "  2: Red" << endl << "  3: Yellow" << endl << "  4: Green" << endl << "  5: Blue" << endl << "  6: Magenta" << endl << "  7: White" << endl << "  8: Cyan" << endl;
         break;
     case 'i': case 'I':
         objectLocation.initObjectLocation(-projection_constant + 2*scale, scale + 0.1, velocityConst, -2 * velocityConst, projection_constant);
-        break;
-    case 'd': case 'D':
-        isSolid = !isSolid; // Change the wireframe or solid by pressing to d.
         break;
      // Colors ranging from black to white between the inputs from 1 to 8.
     case '1':
@@ -525,7 +539,21 @@ void lightSource(int id) {
 }
 
 void displayMode(int id) {
-
+    switch (id) {
+    case 1:
+        drawing_type = DrawingType::WIREFRAME;
+        break;
+    case 2:
+        drawing_type = DrawingType::SHADING;
+        break;
+    case 3:
+        drawing_type = DrawingType::TEXTURE;
+        break;
+    case 4:
+        drawing_type = DrawingType::SOLID;
+        break;
+    }
+    glutPostRedisplay();
 }
 
 void glutMenu() {
@@ -552,6 +580,7 @@ void glutMenu() {
     glutAddMenuEntry("Wireframe", 1);
     glutAddMenuEntry("Shading", 2);
     glutAddMenuEntry("Texture", 3);
+    glutAddMenuEntry("SOLID", 4);
 
     // Main Menu
     glutCreateMenu(menuStart);

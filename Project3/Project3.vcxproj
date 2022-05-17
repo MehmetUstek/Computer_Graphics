@@ -150,6 +150,7 @@
     <None Include="vshader.glsl" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DrawingType.cpp" />
     <ClCompile Include="InitShader.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="movement.cpp" />
