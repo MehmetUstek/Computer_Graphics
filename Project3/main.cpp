@@ -6,17 +6,17 @@
 #include <iostream>
 #include <sstream>
 #include "DrawingType.cpp"
+#include "ShadingMode.cpp"
 
 // Initial object -> cube, then with mouse click, sphere, and then bunny.
 ObjectType object_type = ObjectType::SPHERE;
 DrawingType drawing_type = DrawingType::WIREFRAME;
+ShadingMode shading_mode = ShadingMode::GOURAUD;
 // Window sizes:
 GLsizei width = 760;
 GLsizei height = 760;
 ObjectLocation objectLocation;
 GLuint buffer_sphere;
-GLuint buffer;
-GLuint buffer_bunny;
 float projection_constant = 5.0f;
 const float velocityConst = 0.01;
 
@@ -32,9 +32,6 @@ using std::endl; using std::string;
 using std::ifstream; using std::vector;
 
 
-
-
-
 //Sphere 
 // These codes along with the triangle_sphere, unit_sphere, divide_triangle_sphere, and tetrahedron_sphere functions
 // are retrieved from the course textbook, appendix 7.
@@ -46,9 +43,7 @@ typedef Angel::vec4 point4;
 typedef Angel::vec4 color4;
 
 
-
 point4 points_sphere[NumVertices_sphere];
-color4 colors_sphere[NumVertices_sphere];
 int Index_sphere = 0;
 GLuint sphere_indices[NumVertices_sphere];
 float scale = 1.0f;
@@ -63,9 +58,9 @@ triangle_sphere(const point4& a, const point4& b, const point4& c)
 {
     vec3  normal = normalize(cross(b - a, c - b));
 
-    normals_sphere[Index_sphere] = normal;  sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = a; Index_sphere++;
-    normals_sphere[Index_sphere] = normal; sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = b; Index_sphere++;
-    normals_sphere[Index_sphere] = normal; sphere_indices[Index_sphere] = Index_sphere; colors_sphere[Index_sphere] = color; points_sphere[Index_sphere] = c; Index_sphere++;
+    normals_sphere[Index_sphere] = normal;  sphere_indices[Index_sphere] = Index_sphere;  points_sphere[Index_sphere] = a; Index_sphere++;
+    normals_sphere[Index_sphere] = normal; sphere_indices[Index_sphere] = Index_sphere;  points_sphere[Index_sphere] = b; Index_sphere++;
+    normals_sphere[Index_sphere] = normal; sphere_indices[Index_sphere] = Index_sphere;  points_sphere[Index_sphere] = c; Index_sphere++;
 }
 
 point4
@@ -115,14 +110,9 @@ tetrahedron_sphere(int count)
 }
 
 
-const int NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
-
-
-
-
-
 // Model-view and projection matrices uniform location
-GLuint  ModelView, Projection;
+GLuint  ModelView, Projection, vPosition, vNormal, vCoords, Shading_Mode, AmbientProduct, DiffuseProduct, SpecularProduct, Light1Position, Light2Position, Shininess;
+GLuint LightToggle1, LightToggle2, customTexture;
 
 //----------------------------------------------------------------------------
 void setProjection(void) {
@@ -135,12 +125,6 @@ void setProjection(void) {
 void
 init()
 {
-    cout << "-h: Help" << endl << "-q: Quit program" << endl << "-i: Initilization of the animation, starting from the top left corner" << endl;
-    cout << "-d: Change drawing mode between solid and wireframe" << endl;
-    cout << "Change object type with mouse Events:" << endl << " Left click for changing between the objects, starting from cube, then sphere and lastly the bunny" << endl << " The objects will circle back to cube after bunny" << endl;
-    cout << "Change color with numpad actions from 1-8:" << endl;
-    cout << "  1: Black" << endl << "  2: Red" << endl << "  3: Yellow" << endl << "  4: Green" << endl << "  5: Blue" << endl << "  6: Magenta" << endl << "  7: White" << endl << "  8: Cyan" << endl << endl << endl;
-    
     tetrahedron_sphere(NumTimesToSubdivide); // Create sphere.
     
     objectLocation.initObjectLocation(-projection_constant + scale + 0.2, scale+0.3, velocityConst, -2*velocityConst, projection_constant);
@@ -154,12 +138,10 @@ init()
     glBindVertexArray(vao[1]);
     glGenBuffers(1, &buffer_sphere);
     glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(colors_sphere) + sizeof(normals_sphere),
+    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere),
         NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
-        sizeof(colors_sphere), colors_sphere);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(colors_sphere),
         sizeof(normals_sphere), normals_sphere);
 
     // Create and initialize an index buffer object for sphere.
@@ -176,9 +158,17 @@ init()
     glEnableVertexAttribArray(vColor_sphere);
     glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
 
-
-    
-
+    vNormal = glGetAttribLocation(program, "vNormal");
+    vCoords = glGetAttribLocation(program, "vCoords");
+    AmbientProduct = glGetUniformLocation(program, "AmbientProduct");
+    DiffuseProduct = glGetUniformLocation(program, "DiffuseProduct");
+    SpecularProduct = glGetUniformLocation(program, "SpecularProduct");
+    Light1Position = glGetUniformLocation(program, "Light1Position");
+    Light2Position = glGetUniformLocation(program, "Light2Position");
+    LightToggle1 = glGetUniformLocation(program, "L1_Toggle");
+    LightToggle2 = glGetUniformLocation(program, "L2_Toggle");
+    Shininess = glGetUniformLocation(program, "Shininess");
+    Shading_Mode = glGetUniformLocation(program, "Shading_Mode");
 
 
     // Retrieve transformation uniform variable locations
@@ -201,7 +191,6 @@ init()
 
 //----------------------------------------------------------------------------
 
-   
 
 void
 display( void )
@@ -215,16 +204,13 @@ display( void )
 
     case ObjectType::SPHERE:
 
-        for (int i = 0; i < NumVertices_sphere; i++) {
-            colors_sphere[i] = color; // Reassign colors for sphere. And then rebind the points and color data to reflect the color changes.
-        }
         glBindVertexArray(vao[1]);
         glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(colors_sphere),
+        glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere),
             NULL, GL_STATIC_DRAW);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
         glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
-            sizeof(colors_sphere), colors_sphere);
+            sizeof(normals_sphere), normals_sphere);
         switch (drawing_type)
         {
         case DrawingType::WIREFRAME:
@@ -261,7 +247,6 @@ void reshape( int w, int h )
     widthRatio = (GLfloat)w / 760;
     heightRatio = (GLfloat)h / 760;
 }
-
 
 
 //----------------------------------------------------------------------------
@@ -309,8 +294,6 @@ keyboard( unsigned char key,int x, int y )
         break;
     }
     
-
-
     
 }
 
@@ -333,10 +316,6 @@ void timer( int p )
     // Update the object location at each time passed. The radius are updated since there can be change in object types and objects do not have the same scale.
     // Thus prevents resulting in unwanted scale problems.
     switch (object_type) {
-
-    case ObjectType::CUBE:
-        objectLocation.updateObjectLocation(scale/2, scale/2, widthRatio, heightRatio);
-        break;
     case ObjectType::SPHERE:
         objectLocation.updateObjectLocation(scale, scale, widthRatio, heightRatio);
         break;
