@@ -146,8 +146,10 @@
   <ItemGroup>
     <None Include="bunny.off" />
     <None Include="fshader.glsl" />
+    <None Include="fshader_gouraud.glsl" />
     <None Include="packages.config" />
     <None Include="vshader.glsl" />
+    <None Include="vshader_gouraud.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="DrawingType.cpp" />
