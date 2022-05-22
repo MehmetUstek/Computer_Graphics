@@ -16,7 +16,7 @@ enum {
 };
 // Initial object -> cube, then with mouse click, sphere, and then bunny.
 ObjectType object_type = ObjectType::SPHERE;
-DrawingType drawing_type = DrawingType::WIREFRAME;
+DrawingType drawing_type = DrawingType::SHADING;
 int shading_mode = GOURAUD;
 // Window sizes:
 GLsizei width = 760;
@@ -25,6 +25,7 @@ ObjectLocation objectLocation;
 GLuint buffer_sphere;
 float projection_constant = 1.0f;
 const float velocityConst = 0.001;
+bool lighting = true;
 
 
 typedef vec4  color4;
@@ -162,7 +163,7 @@ init()
 
 
     // Initialize shader lighting parameters
-    point4 light_position(0.0, 0.0, 1.0, 0.0); //directional light source
+    point4 light_position(0.0, 0.0, 0.0, 1.0); //point light source located at origin.
     color4 light_ambient(0.2, 0.2, 0.2, 1.0);
     color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
     color4 light_specular(1.0, 1.0, 1.0, 1.0);
@@ -171,6 +172,7 @@ init()
     color4 material_diffuse(1.0, 0.8, 0.0, 1.0);
     color4 material_specular(1.0, 0.8, 0.0, 1.0);
     float  material_shininess = 100.0;
+
 
     color4 ambient_product = light_ambient * material_ambient;
     color4 diffuse_product = light_diffuse * material_diffuse;
@@ -220,7 +222,7 @@ void
 display( void )
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    const vec3 displacement(objectLocation.locX, objectLocation.locY, 1.0);
+    const vec3 displacement(objectLocation.locX, objectLocation.locY, -0.5);
     //const vec3 displacement(0.0, 0.0, 0.0);
     mat4 model_view;
 
@@ -241,7 +243,9 @@ display( void )
         case DrawingType::WIREFRAME:
             glDrawArrays(GL_LINE_LOOP, 0, NumVertices_sphere);
             break;
-        case DrawingType::SOLID:
+        case DrawingType::SHADING:
+            if(lighting) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            else glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawArrays(GL_TRIANGLES, 0, NumVertices_sphere);
             break;
 
@@ -295,7 +299,7 @@ keyboard( unsigned char key,int x, int y )
         cout << "  1: Black" << endl << "  2: Red" << endl << "  3: Yellow" << endl << "  4: Green" << endl << "  5: Blue" << endl << "  6: Magenta" << endl << "  7: White" << endl << "  8: Cyan" << endl;
         break;
     case 'i': case 'I':
-        objectLocation.initObjectLocation(-projection_constant + 2*scale, scale + 0.1, velocityConst, -2 * velocityConst);
+        objectLocation.initObjectLocation((-projection_constant + 2*scale)/5, (scale + 0.1)/5, velocityConst, -2 * velocityConst);
         break;
      // Colors ranging from black to white between the inputs from 1 to 8.
     case '1':
@@ -401,9 +405,6 @@ void displayMode(int id) {
     case 3:
         drawing_type = DrawingType::TEXTURE;
         break;
-    case 4:
-        drawing_type = DrawingType::SOLID;
-        break;
     }
     glutPostRedisplay();
 }
@@ -432,7 +433,6 @@ void glutMenu() {
     glutAddMenuEntry("Wireframe", 1);
     glutAddMenuEntry("Shading", 2);
     glutAddMenuEntry("Texture", 3);
-    glutAddMenuEntry("SOLID", 4);
 
     // Main Menu
     glutCreateMenu(menuStart);
