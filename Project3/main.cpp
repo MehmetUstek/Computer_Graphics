@@ -23,8 +23,8 @@ GLsizei width = 760;
 GLsizei height = 760;
 ObjectLocation objectLocation;
 GLuint buffer_sphere;
-float projection_constant = 5.0f;
-const float velocityConst = 0.01;
+float projection_constant = 1.0f;
+const float velocityConst = 0.001;
 
 
 typedef vec4  color4;
@@ -124,7 +124,7 @@ GLuint LightToggle1, LightToggle2, customTexture;
 void setProjection(void) {
     mat4  projection;
     projection = Ortho(-projection_constant * widthRatio, projection_constant * widthRatio, -projection_constant * heightRatio, projection_constant * heightRatio, -projection_constant, projection_constant); // Ortho(): user-defined function in mat.h
-    //projection = Perspective(45.0, scale, -projection_constant, projection_constant);
+    //projection = Perspective(45.0, scale, 0.1, 5.0);
     glUniformMatrix4fv(Projection, 1, GL_TRUE, projection);
 }
 // OpenGL initialization
@@ -133,12 +133,11 @@ init()
 {
     tetrahedron_sphere(NumTimesToSubdivide); // Create sphere.
     
-    objectLocation.initObjectLocation(-projection_constant + scale + 0.2, scale+0.3, velocityConst, -2*velocityConst, projection_constant);
+    objectLocation.initObjectLocation((-projection_constant + scale + 0.2)/5, (scale+0.3)/5, velocityConst, -2*velocityConst);
 
     glGenVertexArrays( 1, vao );
     glBindVertexArray( vao[0] );
     GLuint program = InitShader("vshader.glsl", "fshader.glsl");
-    //GLuint program = InitShader("vshader_gouraud.glsl", "fshader_gouraud.glsl");
     
     // Sphere object binding and creation.
     glBindVertexArray(vao[1]);
@@ -221,7 +220,8 @@ void
 display( void )
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    const vec3 displacement(objectLocation.locX, objectLocation.locY, 0.0);
+    const vec3 displacement(objectLocation.locX, objectLocation.locY, 1.0);
+    //const vec3 displacement(0.0, 0.0, 0.0);
     mat4 model_view;
 
 
@@ -239,23 +239,26 @@ display( void )
         switch (drawing_type)
         {
         case DrawingType::WIREFRAME:
-            //glDrawElements(GL_LINE_LOOP, NumVertices_sphere, GL_UNSIGNED_INT, 0);
             glDrawArrays(GL_LINE_LOOP, 0, NumVertices_sphere);
             break;
         case DrawingType::SOLID:
-            //glDrawElements(GL_TRIANGLES, NumVertices_sphere, GL_UNSIGNED_INT, 0);
             glDrawArrays(GL_TRIANGLES, 0, NumVertices_sphere);
             break;
 
         }
         
-        //model_view = (Translate(displacement) * Scale(scale, scale, scale));
+        model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5));
         break;
 
     }
     
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
+    
     setProjection();
+    /*LookAt(vec4(0.0f, 0.0f, 0.0f, 0.0f),
+        vec4(0.0f, 0.0f, 5.0f, 0.0f),
+        vec4(0.0f, 5.0f, 0.0f, 0.0f));*/
+    
     
     
     glutSwapBuffers();
@@ -292,7 +295,7 @@ keyboard( unsigned char key,int x, int y )
         cout << "  1: Black" << endl << "  2: Red" << endl << "  3: Yellow" << endl << "  4: Green" << endl << "  5: Blue" << endl << "  6: Magenta" << endl << "  7: White" << endl << "  8: Cyan" << endl;
         break;
     case 'i': case 'I':
-        objectLocation.initObjectLocation(-projection_constant + 2*scale, scale + 0.1, velocityConst, -2 * velocityConst, projection_constant);
+        objectLocation.initObjectLocation(-projection_constant + 2*scale, scale + 0.1, velocityConst, -2 * velocityConst);
         break;
      // Colors ranging from black to white between the inputs from 1 to 8.
     case '1':
@@ -344,7 +347,7 @@ void timer( int p )
     // Thus prevents resulting in unwanted scale problems.
     switch (object_type) {
     case ObjectType::SPHERE:
-        objectLocation.updateObjectLocation(scale, scale, widthRatio, heightRatio);
+        objectLocation.updateObjectLocation(scale/5, scale/5, widthRatio, heightRatio);
         break;
 
     };

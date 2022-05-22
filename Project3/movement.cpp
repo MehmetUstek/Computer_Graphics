@@ -3,9 +3,9 @@
 struct ObjectLocation {
 
 	GLfloat locX, locY, velocityX, velocityY;
-	float projectionConstant = 5.0f;
+	float projectionConstant = 1.0f;
 
-	void initObjectLocation(GLfloat locX, GLfloat locY, GLfloat velocityX, GLfloat velocityY, float projection_constant) {
+	void initObjectLocation(GLfloat locX, GLfloat locY, GLfloat velocityX, GLfloat velocityY) {
 		this->locX = locX;
 		this->locY = locY;
 		this->velocityX = velocityX;
