@@ -18,8 +18,6 @@ out  vec3 fL;
 
 void main()
 {
-    gl_Position = Projection * ModelView * vPosition;
-    color = vColor;
 
     // ///////////////
     // Gouraud
@@ -63,7 +61,7 @@ void main()
     // Phong
     // ///////////////
     // Transform vertex position into camera (eye) coordinates
-    if (Shading_Mode == 1) {
+    else if (Shading_Mode == 1) {
         vec3 pos = (ModelView * vPosition).xyz;
 
         fN = (ModelView * vec4(vNormal, 0.0)).xyz; // normal direction in camera coordinates

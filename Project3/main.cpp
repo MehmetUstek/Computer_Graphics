@@ -58,9 +58,9 @@ triangle_sphere(const point4& a, const point4& b, const point4& c)
 {
     vec3  normal = normalize(cross(b - a, c - b));
 
-    normals_sphere[Index_sphere] = normal;  sphere_indices[Index_sphere] = Index_sphere;  points_sphere[Index_sphere] = a; Index_sphere++;
-    normals_sphere[Index_sphere] = normal; sphere_indices[Index_sphere] = Index_sphere;  points_sphere[Index_sphere] = b; Index_sphere++;
-    normals_sphere[Index_sphere] = normal; sphere_indices[Index_sphere] = Index_sphere;  points_sphere[Index_sphere] = c; Index_sphere++;
+    normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = a; Index_sphere++;
+    normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = b; Index_sphere++;
+    normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = c; Index_sphere++;
 }
 
 point4
@@ -138,17 +138,9 @@ init()
     glBindVertexArray(vao[1]);
     glGenBuffers(1, &buffer_sphere);
     glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere),
-        NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
-    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere),
-        sizeof(normals_sphere), normals_sphere);
-
-    // Create and initialize an index buffer object for sphere.
-    GLuint index_buffer_sphere;
-    glGenBuffers(1, &index_buffer_sphere);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_sphere);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(sphere_indices), sphere_indices, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere), sizeof(normals_sphere), normals_sphere);
 
     GLuint vPosition1 = glGetAttribLocation(program, "vPosition");
     glEnableVertexAttribArray(vPosition1);
@@ -158,16 +150,42 @@ init()
     glEnableVertexAttribArray(vColor_sphere);
     glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
 
-    vNormal = glGetAttribLocation(program, "vNormal");
+
+    GLuint vNormal = glGetAttribLocation(program, "vNormal");
+    glEnableVertexAttribArray(vNormal);
+    glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
+
+
+    // Initialize shader lighting parameters
+    point4 light_position(0.0, 0.0, 1.0, 0.0); //directional light source
+    color4 light_ambient(0.2, 0.2, 0.2, 1.0);
+    color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
+    color4 light_specular(1.0, 1.0, 1.0, 1.0);
+
+    color4 material_ambient(1.0, 0.0, 1.0, 1.0);
+    color4 material_diffuse(1.0, 0.8, 0.0, 1.0);
+    color4 material_specular(1.0, 0.8, 0.0, 1.0);
+    float  material_shininess = 100.0;
+
+    color4 ambient_product = light_ambient * material_ambient;
+    color4 diffuse_product = light_diffuse * material_diffuse;
+    color4 specular_product = light_specular * material_specular;
+
+    glUniform4fv(glGetUniformLocation(program, "AmbientProduct"),
+        1, ambient_product);
+    glUniform4fv(glGetUniformLocation(program, "DiffuseProduct"),
+        1, diffuse_product);
+    glUniform4fv(glGetUniformLocation(program, "SpecularProduct"),
+        1, specular_product);
+
+    glUniform4fv(glGetUniformLocation(program, "LightPosition"),
+        1, light_position);
+
+    glUniform1f(glGetUniformLocation(program, "Shininess"),
+        material_shininess);
+
+
     vCoords = glGetAttribLocation(program, "vCoords");
-    AmbientProduct = glGetUniformLocation(program, "AmbientProduct");
-    DiffuseProduct = glGetUniformLocation(program, "DiffuseProduct");
-    SpecularProduct = glGetUniformLocation(program, "SpecularProduct");
-    Light1Position = glGetUniformLocation(program, "Light1Position");
-    Light2Position = glGetUniformLocation(program, "Light2Position");
-    LightToggle1 = glGetUniformLocation(program, "L1_Toggle");
-    LightToggle2 = glGetUniformLocation(program, "L2_Toggle");
-    Shininess = glGetUniformLocation(program, "Shininess");
     Shading_Mode = glGetUniformLocation(program, "Shading_Mode");
 
 
@@ -214,15 +232,17 @@ display( void )
         switch (drawing_type)
         {
         case DrawingType::WIREFRAME:
-            glDrawElements(GL_LINE_LOOP, NumVertices_sphere, GL_UNSIGNED_INT, 0);
+            //glDrawElements(GL_LINE_LOOP, NumVertices_sphere, GL_UNSIGNED_INT, 0);
+            glDrawArrays(GL_LINE_LOOP, 0, NumVertices_sphere);
             break;
         case DrawingType::SOLID:
-            glDrawElements(GL_TRIANGLES, NumVertices_sphere, GL_UNSIGNED_INT, 0);
+            //glDrawElements(GL_TRIANGLES, NumVertices_sphere, GL_UNSIGNED_INT, 0);
+            glDrawArrays(GL_TRIANGLES, 0, NumVertices_sphere);
             break;
 
         }
         
-        model_view = (Translate(displacement) * Scale(scale, scale, scale));
+        //model_view = (Translate(displacement) * Scale(scale, scale, scale));
         break;
 
     }
@@ -331,7 +351,19 @@ void menuStart(int id) {
 
 }
 void shadingMenu(int id) {
-
+    switch (id) {
+    case 1:
+        shading_mode = ShadingMode::GOURAUD;
+        break;
+    case 2:
+        shading_mode = ShadingMode::PHONG;
+        break;
+    case 3:
+        shading_mode = ShadingMode::MODIFIED_PHONG;
+        break;
+    }
+    Shading_Mode = static_cast<int>(shading_mode);
+    glutPostRedisplay();
 }
 void componentMenu(int id) {
     switch (id) {
