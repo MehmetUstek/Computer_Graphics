@@ -10,6 +10,7 @@ uniform mat4 Projection;
 uniform vec4 LightPosition;
 uniform float Shininess;
 uniform int Shading_Mode;
+uniform int isLightSourceFixed;
 
 out vec4 color;
 out  vec3 fN;
@@ -63,20 +64,32 @@ void main()
     // ///////////////
     // Transform vertex position into camera (eye) coordinates
     else if (Shading_Mode == 1) {
-        vec3 pos = (ModelView * vPosition).xyz;
-
-        fN = (ModelView * vec4(vNormal, 0.0)).xyz; // normal direction in camera coordinates
-
-        fV = -pos; //viewer direction in camera coordinates
-
-        fL = LightPosition.xyz; // light direction
-
-        if (LightPosition.w != 0.0) {
-            fL = LightPosition.xyz - pos;  //point light source
+        
+        if (isLightSourceFixed==1) {
+            ///// Phong with fixed lighting.
+            fN = vNormal;
+            fV = vPosition.xyz;
+            fL = LightPosition.xyz;
+            if (LightPosition.w != 0.0) {
+                fL = LightPosition.xyz - vPosition.xyz;
+            }
+            gl_Position = Projection * ModelView * vPosition;
         }
+        else {
+            vec3 pos = (ModelView * vPosition).xyz;
 
+            fN = (ModelView * vec4(vNormal, 0.0)).xyz; // normal direction in camera coordinates
 
-        gl_Position = Projection * ModelView * vPosition;
-        color = vColor;
+            fV = -pos; //viewer direction in camera coordinates
+
+            fL = LightPosition.xyz; // light direction
+
+            if (LightPosition.w != 0.0) {
+                fL = LightPosition.xyz - pos;  //point light source
+            }
+
+            gl_Position = Projection * ModelView * vPosition;
+            color = vColor;
+        }
     }
 }

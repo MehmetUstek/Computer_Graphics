@@ -26,6 +26,7 @@ GLuint buffer_sphere;
 float projection_constant = 1.0f;
 const float velocityConst = 0.001;
 bool lighting = true;
+bool isFixed = false;
 
 
 typedef vec4  color4;
@@ -118,8 +119,8 @@ tetrahedron_sphere(int count)
 
 
 // Model-view and projection matrices uniform location
-GLuint  ModelView, Projection, vPosition, vNormal, vCoords, Shading_Mode, AmbientProduct, DiffuseProduct, SpecularProduct, Light1Position, Light2Position, Shininess;
-GLuint LightToggle1, LightToggle2, customTexture;
+GLuint  ModelView, Projection, vPosition, vNormal, vCoords, Shading_Mode, AmbientProduct, DiffuseProduct, SpecularProduct, Light1Position, Light2Position, Shininess, isLightSourceFixed;
+GLuint customTexture;
 
 //----------------------------------------------------------------------------
 void setProjection(void) {
@@ -163,7 +164,7 @@ init()
 
 
     // Initialize shader lighting parameters
-    point4 light_position(0.0, 0.0, 0.0, 1.0); //point light source located at origin.
+    point4 light_position(0.0, 0.0, 2.0, 1.0); //point light source.
     color4 light_ambient(0.2, 0.2, 0.2, 1.0);
     color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
     color4 light_specular(1.0, 1.0, 1.0, 1.0);
@@ -171,7 +172,7 @@ init()
     color4 material_ambient(1.0, 0.0, 1.0, 1.0);
     color4 material_diffuse(1.0, 0.8, 0.0, 1.0);
     color4 material_specular(1.0, 0.8, 0.0, 1.0);
-    float  material_shininess = 100.0;
+    float  material_shininess = 5.0;
 
 
     color4 ambient_product = light_ambient * material_ambient;
@@ -194,8 +195,10 @@ init()
 
     vCoords = glGetAttribLocation(program, "vCoords");
     Shading_Mode = glGetUniformLocation(program, "Shading_Mode");
+    isLightSourceFixed = glGetUniformLocation(program, "isLightSourceFixed");
 
     glUniform1i(Shading_Mode, Shading_Mode);
+    glUniform1i(isLightSourceFixed, isFixed);
 
     // Retrieve transformation uniform variable locations
     ModelView = glGetUniformLocation( program, "ModelView" );
@@ -222,9 +225,14 @@ void
 display( void )
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    const vec3 displacement(objectLocation.locX, objectLocation.locY, -0.5);
+
+    point4 at(0.0, 0.0, 0.0, 1.0);
+    point4 eye(0.0, 0.0, 2.0, 1.0);
+    vec4 up(0.0, 1.0, 0.0, 0.0);
+    mat4 model_view = LookAt(eye, at, up);
+
+    const vec3 displacement(objectLocation.locX, objectLocation.locY, 0.0);
     //const vec3 displacement(0.0, 0.0, 0.0);
-    mat4 model_view;
 
 
     switch (object_type) {
@@ -391,6 +399,16 @@ void materialProperty(int id) {
 
 }
 void lightSource(int id) {
+    switch (id) {
+    case 1:
+        isFixed = true;
+        break;
+    case 2:
+        isFixed = false;
+        break;
+    }
+    glUniform1i(isLightSourceFixed, isFixed);
+    glutPostRedisplay();
 
 }
 

@@ -45,8 +45,6 @@ void main()
          vec3 V = normalize(fV);
          vec3 L = normalize(fL);
 
-
-
          vec3 H = normalize(L + V);
 
          vec4 ambient = AmbientProduct;
