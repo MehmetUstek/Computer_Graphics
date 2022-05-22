@@ -27,7 +27,14 @@ float projection_constant = 1.0f;
 const float velocityConst = 0.001;
 bool lighting = true;
 bool isFixed = false;
+float  material_shininess;
+GLubyte basketball[512][256][3];
+GLubyte* image, image2;
+const int  TextureSizeX = 512;
+const int TextureSizeY = 256;
 
+const int  TextureSizeX_2 = 2048;
+const int TextureSizeY_2 = 1024;
 
 typedef vec4  color4;
 typedef vec4  point4;
@@ -58,6 +65,79 @@ float scale = 1.0f;
 GLfloat widthRatio = 1.0;
 GLfloat heightRatio = 1.0;
 vec3 normals_sphere[NumVertices_sphere];
+GLuint textures[2];
+
+// Read bunny.off, extract vertices, and triangles list. Since we know vertices and triangles size, to avoid dynamic array approach, I
+// specified the numVertices and numTriangles beforehand.
+//void
+//readBunny() {
+//    std::string input;
+//    int numOfVertices, numOfTriangles;
+//    int dumm;
+//
+//    std::ifstream file("bunny.off");
+//    file >> input;
+//    file >> numOfVertices >> numOfTriangles >> dumm;
+//
+//
+//    for (int i = 0; i < numOfVertices; i++) {
+//        GLfloat x, y, z;
+//        file >> x >> y >> z;
+//        vertex_list_bunny[i] = point4(x, y, z, (GLfloat)1.0);
+//    }
+//
+//    for (int i = 0; i < numOfTriangles; i++) {
+//        int dummy;
+//        int x, y, z;
+//        file >> dummy >> x >> y >> z;
+//        triangle_list_bunny[3 * i] = x;
+//        triangle_list_bunny[(3 * i) + 1] = y;
+//        triangle_list_bunny[(3 * i) + 2] = z;
+//    }
+//    file.close();
+//}
+
+void
+readPPM() {
+    int n, m;
+    FILE* fd;
+    int k, nm;
+    char c;
+    int i;
+    char b[100];
+    float s;
+    int red, green, blue;
+    printf("enter file name\n");
+    scanf("%s", b);
+    fd = fopen(b, "r");
+    fscanf(fd, "%[^\n]", b);
+    if (b[0] != 'P' || b[1] != '3') {
+        printf("%s is not a PPM file!\n",b);
+        exit(0);
+    }
+    printf("%s is a PPM file\n",b);
+    fscanf(fd, "%c", &c);
+    while (c == '#')
+    {
+        fscanf(fd, "%[^\n]",b);
+        printf("%s\n", b);
+        fscanf(fd, "%c", &c);
+    }
+    ungetc(c, fd);
+
+    fscanf(fd, "%d %d %d", &n, &m, &k);
+    printf("%d rows %d columns max value= %d\n", n, m, k);
+    nm = n * m;
+    image = (GLubyte*) malloc(3 * sizeof(GLuint) * nm);
+    for (i = nm; i > 0; i--)
+    {
+        fscanf(fd, "%d %d %d", &red, &green, &blue);
+        image[3 * nm - 3 * i] = red;
+        image[3 * nm - 3 * i + 1] = green;
+        image[3 * nm - 3 * i + 2] = blue;
+    }
+    
+}
 
 
 // The normals are deleted, instead I added sphere_indices to get the sphere index values from each vertex to another.
@@ -120,7 +200,7 @@ tetrahedron_sphere(int count)
 
 // Model-view and projection matrices uniform location
 GLuint  ModelView, Projection, vPosition, vNormal, vCoords, Shading_Mode, AmbientProduct, DiffuseProduct, SpecularProduct, Light1Position, Light2Position, Shininess, isLightSourceFixed;
-GLuint customTexture;
+GLuint customTexture, program;
 
 //----------------------------------------------------------------------------
 void setProjection(void) {
@@ -133,13 +213,44 @@ void setProjection(void) {
 void
 init()
 {
+    readPPM();
     tetrahedron_sphere(NumTimesToSubdivide); // Create sphere.
     
     objectLocation.initObjectLocation((-projection_constant + scale + 0.2)/5, (scale+0.3)/5, velocityConst, -2*velocityConst);
 
+    ///////////////////////
+    // Texture
+    // Initialize texture objects
+    glGenTextures(2, textures);
+
+    glBindTexture(GL_TEXTURE_2D, textures[0]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX, TextureSizeY, 0,
+        GL_RGB, GL_UNSIGNED_BYTE, image);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //try here different alternatives
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //try here different alternatives
+
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX_2, TextureSizeY_2, 0,
+        GL_RGB, GL_UNSIGNED_BYTE, image2);
+    //glGenerateMipmap(GL_TEXTURE_2D); // try also activating mipmaps for the second texture object
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, textures[0]); //set current texture
+    ////////////////////////
+    /////////////////////
+
+
+
+
     glGenVertexArrays( 1, vao );
     glBindVertexArray( vao[0] );
-    GLuint program = InitShader("vshader.glsl", "fshader.glsl");
+    program = InitShader("vshader.glsl", "fshader.glsl");
     
     // Sphere object binding and creation.
     glBindVertexArray(vao[1]);
@@ -172,7 +283,7 @@ init()
     color4 material_ambient(1.0, 0.0, 1.0, 1.0);
     color4 material_diffuse(1.0, 0.8, 0.0, 1.0);
     color4 material_specular(1.0, 0.8, 0.0, 1.0);
-    float  material_shininess = 5.0;
+    material_shininess = 5.0;
 
 
     color4 ambient_product = light_ambient * material_ambient;
@@ -384,7 +495,6 @@ void shadingMenu(int id) {
         shading_mode = MODIFIED_PHONG;
         break;
     }
-    //Shading_Mode = static_cast<int>(shading_mode);
     glUniform1i(Shading_Mode, shading_mode);
     glutPostRedisplay();
 }
@@ -396,15 +506,27 @@ void componentMenu(int id) {
     glutPostRedisplay();
 }
 void materialProperty(int id) {
-
+    switch (id) {
+    case 1:
+        // Plastic 5-10
+        material_shininess = 5.0;
+        break;
+    case 2:
+        // Metallic 100-200
+        material_shininess = 150.0;
+        break;
+    }
+    glUniform1f(glGetUniformLocation(program, "Shininess"),
+        material_shininess);
+    glutPostRedisplay();
 }
 void lightSource(int id) {
     switch (id) {
     case 1:
-        isFixed = true;
+        isFixed = false;
         break;
     case 2:
-        isFixed = false;
+        isFixed = true;
         break;
     }
     glUniform1i(isLightSourceFixed, isFixed);

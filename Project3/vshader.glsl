@@ -89,7 +89,7 @@ void main()
             }
 
             gl_Position = Projection * ModelView * vPosition;
-            color = vColor;
+            //color = vColor;
         }
     }
 }
