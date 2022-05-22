@@ -13,7 +13,6 @@ out vec4 fcolor;
 
 void main()
 {
-     
      if (Shading_Mode == 0) { //Gouraud
          fcolor = color;
      }

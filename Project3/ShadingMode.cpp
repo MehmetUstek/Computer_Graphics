@@ -1,5 +1,5 @@
 enum class ShadingMode {
-	GOURAUD,
-	PHONG,
-	MODIFIED_PHONG
+	GOURAUD=0,
+	PHONG=1,
+	MODIFIED_PHONG=2
 };

@@ -24,6 +24,7 @@ void main()
     // ///////////////
     // Transform vertex position into camera (eye) coordinates
     if (Shading_Mode == 0) {
+        
         vec3 pos = (ModelView * vPosition).xyz;
 
         vec3 L = LightPosition.xyz; // light direction if directional light source

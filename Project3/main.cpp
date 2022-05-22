@@ -8,10 +8,16 @@
 #include "DrawingType.cpp"
 #include "ShadingMode.cpp"
 
+
+enum {
+    GOURAUD = 0,
+    PHONG = 1,
+    MODIFIED_PHONG = 2
+};
 // Initial object -> cube, then with mouse click, sphere, and then bunny.
 ObjectType object_type = ObjectType::SPHERE;
 DrawingType drawing_type = DrawingType::WIREFRAME;
-ShadingMode shading_mode = ShadingMode::GOURAUD;
+int shading_mode = GOURAUD;
 // Window sizes:
 GLsizei width = 760;
 GLsizei height = 760;
@@ -188,6 +194,7 @@ init()
     vCoords = glGetAttribLocation(program, "vCoords");
     Shading_Mode = glGetUniformLocation(program, "Shading_Mode");
 
+    glUniform1i(Shading_Mode, Shading_Mode);
 
     // Retrieve transformation uniform variable locations
     ModelView = glGetUniformLocation( program, "ModelView" );
@@ -353,16 +360,17 @@ void menuStart(int id) {
 void shadingMenu(int id) {
     switch (id) {
     case 1:
-        shading_mode = ShadingMode::GOURAUD;
+        shading_mode = GOURAUD;
         break;
     case 2:
-        shading_mode = ShadingMode::PHONG;
+        shading_mode = PHONG;
         break;
     case 3:
-        shading_mode = ShadingMode::MODIFIED_PHONG;
+        shading_mode = MODIFIED_PHONG;
         break;
     }
-    Shading_Mode = static_cast<int>(shading_mode);
+    //Shading_Mode = static_cast<int>(shading_mode);
+    glUniform1i(Shading_Mode, shading_mode);
     glutPostRedisplay();
 }
 void componentMenu(int id) {
