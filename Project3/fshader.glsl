@@ -22,7 +22,11 @@ void main()
     }
     else if (Drawing_Type == 1) { // Shading
         if (Shading_Mode == 0) { //Gouraud
-            fcolor = color;
+            if (TextureFlag == 1)
+                //sample a texture color from texture object
+                fcolor = texture(tex, texCoord);
+
+            else fcolor = color;
         }
         else if (Shading_Mode == 1) {
             fcolor = color;

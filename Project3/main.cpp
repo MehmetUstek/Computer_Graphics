@@ -192,10 +192,11 @@ triangle_sphere(const point4& a, const point4& b, const point4& c)
     };
 
     vec3  normal = normalize(cross(b - a, c - b));
+
     
 
     //TODO: add quads and textures.
-    calculate_u_v(a); tex_coords[Index_sphere] = vec2(u,v); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = a; Index_sphere++;
+    calculate_u_v(a); tex_coords[Index_sphere] = vec2(u, v); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = a; Index_sphere++;
     calculate_u_v(b); tex_coords[Index_sphere] = vec2(u, v); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = b; Index_sphere++;
     calculate_u_v(c); tex_coords[Index_sphere] = vec2(u, v); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = c; Index_sphere++;
 }
@@ -250,32 +251,10 @@ tetrahedron_sphere(int count)
 // Model-view and projection matrices uniform location
 GLuint  ModelView, Projection, vPosition, vNormal, vCoords, Shading_Mode, AmbientProduct, DiffuseProduct, SpecularProduct, Light1Position, Light2Position, Shininess, isLightSourceFixed;
 GLuint customTexture, program, Drawing_Type;
-bool textureFlag = false; //enable texture mapping
+bool textureFlag = true; //enable texture mapping
 GLuint TextureFlagLoc; // texture flag uniform location
 vec4 zero = vec4(0, 0, 0, 0);
 
-
-int textureIndex = 0;
-void change_texture() {
-    textureIndex++;
-    if (textureIndex > 2) {
-        textureIndex = 0;
-        if (textureIndex = 0) {
-            glBindTexture(GL_TEXTURE_2D, textures[0]);
-            textureFlag = 1;
-            glUniform1i(TextureFlagLoc, textureFlag);
-        }
-        else if (textureIndex == 1) {
-            glBindTexture(GL_TEXTURE_2D, textures[1]);
-            textureFlag = 1;
-            glUniform1i(TextureFlagLoc, textureFlag);
-        }
-        else if (textureIndex == 2) {
-            textureFlag = 0;
-            glUniform1i(TextureFlagLoc, textureFlag);
-        }
-    }
-}
 
 // Initialize shader lighting parameters
 point4 light_position(0.0, 0.0, 2.0, 1.0); //point light source.
@@ -325,20 +304,20 @@ init()
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //try here different alternatives
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //try here different alternatives
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //try here different alternatives
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //try here different alternatives
 
-    change_texture();
-    //glBindTexture(GL_TEXTURE_2D, textures[1]);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX_2, TextureSizeY_2, 0,
-    //    GL_RGB, GL_UNSIGNED_BYTE, image2);
-    //glGenerateMipmap(GL_TEXTURE_2D); // try also activating mipmaps for the second texture object
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX_2, TextureSizeY_2, 0,
+        GL_RGB, GL_UNSIGNED_BYTE, image2);
+    glGenerateMipmap(GL_TEXTURE_2D); // try also activating mipmaps for the second texture object
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    //glBindTexture(GL_TEXTURE_2D, textures[0]); //set current texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures[0]); //set current texture
     ////////////////////////
     /////////////////////
 
@@ -405,7 +384,7 @@ init()
     Drawing_Type = glGetUniformLocation(program, "Drawing_Type");
     isLightSourceFixed = glGetUniformLocation(program, "isLightSourceFixed");
 
-    glUniform1i(Shading_Mode, Shading_Mode);
+    glUniform1i(Shading_Mode, shading_mode);
     glUniform1i(Drawing_Type, drawing_type);
     glUniform1i(isLightSourceFixed, isFixed);
 

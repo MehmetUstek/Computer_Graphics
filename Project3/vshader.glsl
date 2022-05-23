@@ -72,7 +72,7 @@ void main()
             if (dot(L, N) < 0.0) {
                 specular = vec4(0.0, 0.0, 0.0, 1.0);
             }
-
+            texCoord = vTexCoord;
             gl_Position = Projection * ModelView * vPosition;
 
             color = ambient + diffuse + specular;
