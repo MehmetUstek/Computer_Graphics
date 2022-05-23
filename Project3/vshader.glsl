@@ -23,8 +23,7 @@ out vec2 texCoord;
 
 void main()
 {
-    color = vColor;
-    texCoord = vTexCoord;
+    
     if (Drawing_Type == 0) {
 
     }
@@ -36,9 +35,20 @@ void main()
         if (Shading_Mode == 0) {
 
             vec3 pos = (ModelView * vPosition).xyz;
+            vec3 L;
 
-            vec3 L = LightPosition.xyz; // light direction if directional light source
-            if (LightPosition.w != 0.0) L = LightPosition.xyz - pos;  // if point light source
+            if (isLightSourceFixed == 1) {
+                L = LightPosition.xyz;
+                if (LightPosition.w != 0.0) {
+                    L = LightPosition.xyz - vPosition.xyz;
+                }
+            }
+            else {
+                L = LightPosition.xyz; // light direction if directional light source
+                if (LightPosition.w != 0.0) L = LightPosition.xyz - pos;  // if point light source
+            }
+
+            
 
             L = normalize(L);
             //vec3 L = normalize( LightPosition.xyz - pos ); //light direction
@@ -103,6 +113,7 @@ void main()
         }
     }
     else if (Drawing_Type == 2) {
-
+        color = vColor;
+        texCoord = vTexCoord;
     }
 }

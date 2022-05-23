@@ -9,6 +9,9 @@
 #include "ShadingMode.cpp"
 
 
+enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
+GLfloat Theta[NumAxes] = { 0.0, 0.0, 0.0 };
+
 enum {
     GOURAUD = 0,
     PHONG = 1,
@@ -167,9 +170,9 @@ triangle_sphere(const point4& a, const point4& b, const point4& c)
 
     vec3  normal = normalize(cross(b - a, c - b));
     //TODO: add quads and textures.
-    normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = a; Index_sphere++;
-    normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = b; Index_sphere++;
-    normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = c; Index_sphere++;
+    tex_coords[Index_sphere] = vec2(0.0, 0.0); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = a; Index_sphere++;
+    tex_coords[Index_sphere] = vec2(0.0, 1.0); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = b; Index_sphere++;
+    tex_coords[Index_sphere] = vec2(1.0, 1.0); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = c; Index_sphere++;
 }
 
 point4
@@ -445,7 +448,7 @@ display( void )
 
         }
         
-        model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5));
+        model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5)) * RotateZ(Theta[Zaxis]);
         break;
 
     }
@@ -537,7 +540,11 @@ void timer( int p )
         break;
 
     };
+    Theta[Zaxis] += 3;
 
+    if (Theta[Zaxis] > 360.0) {
+        Theta[Zaxis] -= 360.0;
+    }
     glutPostRedisplay();
     
     glutTimerFunc(2,timer,0);
