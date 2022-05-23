@@ -25,7 +25,9 @@ void main()
 {
     
     if (Drawing_Type == 0) {
-
+        color = vColor;
+        texCoord = vTexCoord;
+        gl_Position = Projection * ModelView * vPosition;
     }
     else if (Drawing_Type == 1) { // Shading
         // ///////////////
@@ -58,7 +60,6 @@ void main()
 
             }
 
-
             // Compute terms in the illumination equation
             vec4 ambient = AmbientProduct;
 
@@ -72,6 +73,8 @@ void main()
             if (dot(L, N) < 0.0) {
                 specular = vec4(0.0, 0.0, 0.0, 1.0);
             }
+
+            color = vColor;
             texCoord = vTexCoord;
             gl_Position = Projection * ModelView * vPosition;
 
@@ -109,7 +112,7 @@ void main()
                 }
 
                 gl_Position = Projection * ModelView * vPosition;
-                //color = vColor;
+                color = vColor;
             }
         }
     }
