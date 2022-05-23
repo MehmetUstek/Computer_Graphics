@@ -22,10 +22,17 @@ enum {
     SHADING=1,
     TEXTURE=2
 };
+
+enum {
+    BASKETBALL = 0,
+    EARTH = 1
+};
 // Initial object -> cube, then with mouse click, sphere, and then bunny.
 ObjectType object_type = ObjectType::SPHERE;
 int drawing_type = SHADING;
 int shading_mode = GOURAUD;
+int texture_type = BASKETBALL;
+GLfloat u, v;
 // Window sizes:
 GLsizei width = 760;
 GLsizei height = 760;
@@ -153,6 +160,22 @@ readPPM(const char* filename) {
 }
 
 
+void calculate_u_v(point4 point) {
+    point4 V = normalize(point);
+    double r = scale / 5;
+
+    if (texture_type == BASKETBALL)
+        r /= TextureSizeY;
+    else if (texture_type == EARTH)
+        r /= TextureSizeY_2;
+
+    v = acos(V.z / r) / M_PI;
+    if (V.y > 0)
+        u = acos(V.x / (r * sin(M_PI * (v)))) / (2 * M_PI);
+    else
+        u = (M_PI + acos(V.x / (r * sin(M_PI * (v))))) / (2 * M_PI);
+}
+
 // The normals are deleted, instead I added sphere_indices to get the sphere index values from each vertex to another.
 void
 triangle_sphere(const point4& a, const point4& b, const point4& c)
@@ -169,10 +192,12 @@ triangle_sphere(const point4& a, const point4& b, const point4& c)
     };
 
     vec3  normal = normalize(cross(b - a, c - b));
+    
+
     //TODO: add quads and textures.
-    tex_coords[Index_sphere] = vec2(0.0, 0.0); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = a; Index_sphere++;
-    tex_coords[Index_sphere] = vec2(0.0, 1.0); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = b; Index_sphere++;
-    tex_coords[Index_sphere] = vec2(1.0, 1.0); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = c; Index_sphere++;
+    calculate_u_v(a); tex_coords[Index_sphere] = vec2(u,v); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = a; Index_sphere++;
+    calculate_u_v(b); tex_coords[Index_sphere] = vec2(u, v); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = b; Index_sphere++;
+    calculate_u_v(c); tex_coords[Index_sphere] = vec2(u, v); normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = c; Index_sphere++;
 }
 
 point4
@@ -269,6 +294,8 @@ color4 diffuse_product = light_diffuse * material_diffuse;
 color4 specular_product = light_specular * material_specular;
 
 
+
+
 //----------------------------------------------------------------------------
 void setProjection(void) {
     mat4  projection;
@@ -359,10 +386,6 @@ init()
         BUFFER_OFFSET(offset));
 
 
-    
-
-    
-
     glUniform4fv(glGetUniformLocation(program, "AmbientProduct"),
         1, ambient_product);
     glUniform4fv(glGetUniformLocation(program, "DiffuseProduct"),
@@ -419,7 +442,6 @@ display( void )
     point4 eye(0.0, 0.0, 2.0, 1.0);
     vec4 up(0.0, 1.0, 0.0, 0.0);
     mat4 model_view = LookAt(eye, at, up);
-
     const vec3 displacement(objectLocation.locX, objectLocation.locY, 0.0);
     //const vec3 displacement(0.0, 0.0, 0.0);
 
@@ -456,9 +478,6 @@ display( void )
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
     
     setProjection();
-    /*LookAt(vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        vec4(0.0f, 0.0f, 5.0f, 0.0f),
-        vec4(0.0f, 5.0f, 0.0f, 0.0f));*/
     
     
     
