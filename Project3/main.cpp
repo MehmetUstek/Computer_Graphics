@@ -155,15 +155,15 @@ readPPM(const char* filename) {
     fscanf(fd, "%d %d %d", &n, &m, &k);
     printf("%d rows %d columns max value= %d\n", n, m, k);
     nm = n * m;
-    image = (GLubyte*) malloc(3 * sizeof(GLuint) * nm);
+    GLubyte* image_temp = (GLubyte*) malloc(3 * sizeof(GLuint) * nm);
     for (i = nm; i > 0; i--)
     {
         fscanf(fd, "%d %d %d", &red, &green, &blue);
-        image[3 * nm - 3 * i] = red;
-        image[3 * nm - 3 * i + 1] = green;
-        image[3 * nm - 3 * i + 2] = blue;
+        image_temp[3 * nm - 3 * i] = red;
+        image_temp[3 * nm - 3 * i + 1] = green;
+        image_temp[3 * nm - 3 * i + 2] = blue;
     }
-    return image;
+    return image_temp;
     
 }
 
@@ -303,7 +303,7 @@ init()
     // Texture
     // Initialize texture objects
     image = readPPM("basketball.ppm");
-    //image2 = readPPM("earth.ppm");
+    image2 = readPPM("earth.ppm");
     glGenTextures(2, textures);
 
     glBindTexture(GL_TEXTURE_2D, textures[0]);
@@ -312,20 +312,20 @@ init()
     glGenerateMipmap(GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //try here different alternatives
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //try here different alternatives
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //try here different alternatives
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //try here different alternatives
 
-    //glBindTexture(GL_TEXTURE_2D, textures[1]);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX_2, TextureSizeY_2, 0,
-    //    GL_RGB, GL_UNSIGNED_BYTE, image2);
-    //glGenerateMipmap(GL_TEXTURE_2D); // try also activating mipmaps for the second texture object
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX_2, TextureSizeY_2, 0,
+        GL_RGB, GL_UNSIGNED_BYTE, image2);
+    glGenerateMipmap(GL_TEXTURE_2D); // try also activating mipmaps for the second texture object
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
-    ////glActiveTexture(GL_TEXTURE0);
-    //glBindTexture(GL_TEXTURE_2D, textures[0]); //set current texture
+    //glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textures[0]); //set current texture
     ////////////////////////
     /////////////////////
 
@@ -462,6 +462,9 @@ display( void )
         case SHADING:
             if(lighting) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             else glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDrawArrays(GL_TRIANGLES, 0, NumVertices_sphere);
+            break;
+        case TEXTURE:
             glDrawArrays(GL_TRIANGLES, 0, NumVertices_sphere);
             break;
 

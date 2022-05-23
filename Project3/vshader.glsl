@@ -74,8 +74,6 @@ void main()
                 specular = vec4(0.0, 0.0, 0.0, 1.0);
             }
 
-            color = vColor;
-            texCoord = vTexCoord;
             gl_Position = Projection * ModelView * vPosition;
 
             color = ambient + diffuse + specular;
@@ -107,6 +105,36 @@ void main()
 
                 fL = LightPosition.xyz; // light direction
 
+
+                if (LightPosition.w != 0.0) {
+                    fL = LightPosition.xyz - pos;  //point light source
+                }
+
+                gl_Position = Projection * ModelView * vPosition;
+                color = vColor;
+            }
+        }
+        else if (Shading_Mode == 2) {
+            if (isLightSourceFixed == 1) {
+                ///// Phong with fixed lighting.
+                fN = vNormal;
+                fV = vPosition.xyz;
+                fL = LightPosition.xyz;
+                if (LightPosition.w != 0.0) {
+                    fL = LightPosition.xyz - vPosition.xyz;
+                }
+                gl_Position = Projection * ModelView * vPosition;
+            }
+            else {
+                vec3 pos = (ModelView * vPosition).xyz;
+
+                fN = (ModelView * vec4(vNormal, 0.0)).xyz; // normal direction in camera coordinates
+
+                fV = -pos; //viewer direction in camera coordinates
+
+                fL = LightPosition.xyz; // light direction
+
+
                 if (LightPosition.w != 0.0) {
                     fL = LightPosition.xyz - pos;  //point light source
                 }
@@ -117,16 +145,10 @@ void main()
         }
     }
     else if (Drawing_Type == 2) {
-        color = vColor;
-        texCoord = vTexCoord;
+        // Transform vertex position into camera (eye) coordinates
         vec3 pos = (ModelView * vPosition).xyz;
-        vec3 L;
-        L = LightPosition.xyz; // light direction if directional light source
-        if (LightPosition.w != 0.0) L = LightPosition.xyz - pos;  // if point light source
-  
 
-        L = normalize(L);
-        //vec3 L = normalize( LightPosition.xyz - pos ); //light direction
+        vec3 L = normalize(LightPosition.xyz - pos); //light direction
         vec3 V = normalize(-pos); // viewer direction
         vec3 H = normalize(L + V); // halfway vector
 
@@ -147,6 +169,8 @@ void main()
             specular = vec4(0.0, 0.0, 0.0, 1.0);
         }
 
+        //color       = vColor;
+        texCoord = vTexCoord;
         gl_Position = Projection * ModelView * vPosition;
 
         color = ambient + diffuse + specular;

@@ -33,20 +33,20 @@ void main()
             else fcolor = color;
         }
         else if (Shading_Mode == 1) {
-            fcolor = color;
+            //fcolor = color;
             // Normalize the input lighting vectors
             vec3 N = normalize(fN);
             vec3 V = normalize(fV);
             vec3 L = normalize(fL);
-
-            vec3 H = normalize(L + V);
+            // From class notes: r = 2* (l*n) (n-l)
+            vec3 R = normalize(2 * dot(L, N) * (N - L));
 
             vec4 ambient = AmbientProduct;
 
             float Kd = max(dot(L, N), 0.0);
             vec4 diffuse = Kd * DiffuseProduct;
 
-            float Ks = pow(max(dot(N, H), 0.0), Shininess);
+            float Ks = pow(max(dot(V, R), 0.0), Shininess);
             vec4 specular = Ks * SpecularProduct;
 
             // discard the specular highlight if the light's behind the vertex
@@ -58,6 +58,9 @@ void main()
             fcolor.a = 1.0;
         }
         else if (Shading_Mode == 2) {
+            //Modified Phong
+            //fcolor = color;
+           // Normalize the input lighting vectors
             vec3 N = normalize(fN);
             vec3 V = normalize(fV);
             vec3 L = normalize(fL);
