@@ -1,3 +1,4 @@
 enum class ObjectType {
-	SPHERE
+	SPHERE,
+	BUNNY
 };

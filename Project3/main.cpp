@@ -43,6 +43,8 @@ GLsizei width = 760;
 GLsizei height = 760;
 ObjectLocation objectLocation;
 GLuint buffer_sphere;
+GLuint buffer_bunny;
+
 float projection_constant = 1.0f;
 const float velocityConst = 0.001;
 bool lighting = true;
@@ -66,7 +68,7 @@ GLubyte earth[TextureSizeX_2][TextureSizeY_2][3];
 typedef vec4  color4;
 typedef vec4  point4;
 color4 color = color4(0.0, 0.0, 0.0, 1.0);  // black
-GLuint vao[1];
+GLuint vao[2];
 
 
 using std::cout; using std::cerr;
@@ -95,35 +97,52 @@ GLfloat heightRatio = 1.0;
 vec3 normals_sphere[NumVertices_sphere];
 GLuint textures[2];
 
+//Bunny
+const int numVertices_bunny = 4922;
+const int numTriangles_bunny = 9840;
+color4 colors_bunny[numVertices_bunny];
+color4 normals_bunny[numVertices_bunny];
+point4 vertex_list_bunny[numVertices_bunny];
+int triangle_list_bunny[numTriangles_bunny * 3];
+
 // Read bunny.off, extract vertices, and triangles list. Since we know vertices and triangles size, to avoid dynamic array approach, I
 // specified the numVertices and numTriangles beforehand.
-//void
-//readBunny() {
-//    std::string input;
-//    int numOfVertices, numOfTriangles;
-//    int dumm;
-//
-//    std::ifstream file("bunny.off");
-//    file >> input;
-//    file >> numOfVertices >> numOfTriangles >> dumm;
-//
-//
-//    for (int i = 0; i < numOfVertices; i++) {
-//        GLfloat x, y, z;
-//        file >> x >> y >> z;
-//        vertex_list_bunny[i] = point4(x, y, z, (GLfloat)1.0);
-//    }
-//
-//    for (int i = 0; i < numOfTriangles; i++) {
-//        int dummy;
-//        int x, y, z;
-//        file >> dummy >> x >> y >> z;
-//        triangle_list_bunny[3 * i] = x;
-//        triangle_list_bunny[(3 * i) + 1] = y;
-//        triangle_list_bunny[(3 * i) + 2] = z;
-//    }
-//    file.close();
-//}
+void
+readBunny() {
+    std::string input;
+    int numOfVertices, numOfTriangles;
+    int dumm;
+
+    std::ifstream file("bunny.off");
+    file >> input;
+    file >> numOfVertices >> numOfTriangles >> dumm;
+
+
+    for (int i = 0; i < numOfVertices; i++) {
+        GLfloat x, y, z;
+        file >> x >> y >> z;
+        vertex_list_bunny[i] = point4(x, y, z, (GLfloat)1.0);
+    }
+
+    for (int i = 0; i < numOfTriangles; i++) {
+        int dummy;
+        int x, y, z;
+        file >> dummy >> x >> y >> z;
+        triangle_list_bunny[3 * i] = x;
+        triangle_list_bunny[(3 * i) + 1] = y;
+        triangle_list_bunny[(3 * i) + 2] = z;
+    }
+    file.close();
+}
+void calculateNormalsForBunny() {
+    for (int i = 0; i < numVertices_bunny -2 ; i++) {
+        point4 a = vertex_list_bunny[i];
+        point4 b = vertex_list_bunny[i+1];
+        point4 c = vertex_list_bunny[i+2];
+        vec3 normal = normalize(cross(b - a, c - b));
+        normals_bunny[i] = normal;
+    }
+}
 
 // Retrieved from class notes.
 GLubyte*
@@ -294,7 +313,11 @@ void setProjection(void) {
 void
 init()
 {
-    
+    readBunny(); // read bunny and extract triangles and vertex list, which will then used for bunny creation.
+    calculateNormalsForBunny();
+    for (int i = 0; i < numVertices_bunny; i++) {
+        colors_bunny[i] = color; // Assign bunny colors at initialization. (to black)
+    }
     tetrahedron_sphere(NumTimesToSubdivide); // Create sphere.
     
     objectLocation.initObjectLocation((-projection_constant + scale + 0.2)/5, (scale+0.3)/5, velocityConst, -2*velocityConst);
@@ -331,7 +354,7 @@ init()
 
 
 
-    glGenVertexArrays( 1, vao );
+    glGenVertexArrays( 2, vao );
     glBindVertexArray( vao[0] );
     program = InitShader("vshader.glsl", "fshader.glsl");
     
@@ -373,6 +396,49 @@ init()
     glEnableVertexAttribArray(vColor);
     glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0,
         BUFFER_OFFSET(offset));
+
+
+    /////
+    // Bunny object binding and creation.
+    glBindVertexArray(vao[1]);
+    glGenBuffers(1, &buffer_bunny);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer_bunny);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_list_bunny) + sizeof(normals_bunny) + sizeof(colors_bunny), NULL, GL_STATIC_DRAW);
+
+    offset = 0;
+    glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(vertex_list_bunny), vertex_list_bunny);
+    offset += sizeof(vertex_list_bunny);
+    glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(normals_bunny), normals_bunny);
+    offset += sizeof(normals_bunny);
+    glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(colors_bunny), colors_bunny);
+
+    GLuint index_buffer_bunny;
+    glGenBuffers(1, &index_buffer_bunny);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer_bunny);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triangle_list_bunny), triangle_list_bunny, GL_STATIC_DRAW);
+
+    offset = 0;
+    GLuint vPosition_bunny = glGetAttribLocation(program, "vPosition");
+    glEnableVertexAttribArray(vPosition_bunny);
+    glVertexAttribPointer(vPosition_bunny, 4, GL_FLOAT, GL_FALSE, 0,
+        BUFFER_OFFSET(offset));
+    offset += sizeof(vertex_list_bunny);
+
+    GLuint vNormal_bunny = glGetAttribLocation(program, "vNormal");
+    glEnableVertexAttribArray(vNormal_bunny);
+    glVertexAttribPointer(vNormal_bunny, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
+    offset += sizeof(normals_bunny);
+
+    GLuint vColor_bunny = glGetAttribLocation(program, "vColor");
+    glEnableVertexAttribArray(vColor_bunny);
+    glVertexAttribPointer(vColor_bunny, 4, GL_FLOAT, GL_FALSE, 0,
+        BUFFER_OFFSET(offset));
+
+
+    //////////////////////
+
+
+
 
 
     glUniform4fv(glGetUniformLocation(program, "AmbientProduct"),
@@ -430,7 +496,7 @@ display( void )
 
     mat4 model_view;
     const vec3 displacement(objectLocation.locX, objectLocation.locY, -2.5);
-
+    GLintptr offset = 0;
 
     switch (object_type) {
 
@@ -443,7 +509,7 @@ display( void )
         glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
         glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere) + sizeof(colors_sphere) + sizeof(tex_coords), NULL, GL_STATIC_DRAW);
 
-        GLintptr offset = 0;
+        offset = 0;
 
         glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(points_sphere), points_sphere);
         offset += sizeof(points_sphere);
@@ -473,8 +539,41 @@ display( void )
         model_view = (Translate(displacement) * Scale(scale / 5, scale / 5, scale / 5)) * RotateY(Theta[Yaxis]);
         //model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5)) * RotateZ(Theta[Zaxis]);
         break;
+    case ObjectType::BUNNY:
+        for (int i = 0; i < numVertices_bunny; i++) {
+            colors_bunny[i] = color; // Reassign colors for bunny. And then rebind the points and color data to reflect the color changes.
+        }
+        glBindVertexArray(vao[1]);
+        glBindBuffer(GL_ARRAY_BUFFER, buffer_bunny);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_list_bunny) + sizeof(normals_bunny) + sizeof(colors_bunny), NULL, GL_STATIC_DRAW);
+
+        offset = 0;
+        glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(vertex_list_bunny), vertex_list_bunny);
+        offset += sizeof(vertex_list_bunny);
+        glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(normals_bunny), normals_bunny);
+        offset += sizeof(normals_bunny);
+        glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(colors_bunny), colors_bunny);
+
+
+        switch (drawing_type)
+        {
+        case WIREFRAME:
+            //glDrawArrays(GL_LINE_LOOP, 0, numVertices_bunny);
+            glDrawElements(GL_LINE_LOOP, numTriangles_bunny * 3, GL_UNSIGNED_INT, 0);
+
+            break;
+        case SHADING:
+            //glDrawArrays(GL_TRIANGLES, 0, numVertices_bunny);
+            glDrawElements(GL_TRIANGLES, numTriangles_bunny * 3, GL_UNSIGNED_INT, 0);
+            break;
+
+        }
+        model_view = (Translate(displacement) * Scale(scale / 50, scale / 50, scale / 50)) * RotateZ(Theta[Yaxis]);
+        //model_view = (Translate(displacement) * Scale(scale/50, scale/50, scale/50)) * RotateZ(Theta[Zaxis]);
+
 
     }
+
     
     glUniformMatrix4fv( ModelView, 1, GL_TRUE, model_view );
     
@@ -580,10 +679,13 @@ void timer( int p )
     case ObjectType::SPHERE:
         objectLocation.updateObjectLocation(scale/5, scale/5, widthRatio, heightRatio);
         break;
+    case ObjectType::BUNNY:
+        objectLocation.updateObjectLocation(scale/10, scale/10 * 1.8, widthRatio, heightRatio);
+        break;
 
     };
     // GOOD FOR DISPLAYING MOVING WITH OBJECT.
-    Theta[Yaxis] += 3;
+    Theta[Yaxis] += 0.5;
     if (Theta[Yaxis] > 360.0) {
         Theta[Yaxis] -= 360.0;
     }
@@ -616,6 +718,21 @@ void textureChoice(int id) {
     
     glutPostRedisplay();
 }
+
+
+void objectChoice(int id) {
+    switch (id) {
+    case 1:
+        object_type = ObjectType::SPHERE;
+        break;
+    case 2:
+        object_type = ObjectType::BUNNY;
+        break;
+    }
+
+    glutPostRedisplay();
+}
+
 
 void shadingMenu(int id) {
     switch (id) {
@@ -719,7 +836,7 @@ void displayMode(int id) {
 }
 
 void glutMenu() {
-    int shading_menu, shading_component, light_source, material_property, display_mode, texture_menu_type;
+    int shading_menu, shading_component, light_source, material_property, display_mode, texture_menu_type, object_menu_type;
     shading_menu = glutCreateMenu(shadingMenu);
     glutAddMenuEntry("Gouraud", 1);
     glutAddMenuEntry("Phong", 2);
@@ -748,6 +865,10 @@ void glutMenu() {
     glutAddMenuEntry("Basketball", 1);
     glutAddMenuEntry("Earth", 2);
 
+    object_menu_type = glutCreateMenu(objectChoice);
+    glutAddMenuEntry("Sphere", 1);
+    glutAddMenuEntry("Bunny", 2);
+
     // Main Menu
     glutCreateMenu(menuStart);
     glutAddSubMenu("Shading", shading_menu);
@@ -756,6 +877,7 @@ void glutMenu() {
     glutAddSubMenu("Light Source", light_source);
     glutAddSubMenu("Display Mode", display_mode);
     glutAddSubMenu("Texture Type", texture_menu_type);
+    glutAddSubMenu("Object Type", object_menu_type);
     
     
     
