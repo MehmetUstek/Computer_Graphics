@@ -4,19 +4,31 @@ in vec4 color;
 in  vec3 fN;
 in  vec3 fL;
 in  vec3 fV;
+in  vec2 texCoord;
 
 uniform vec4 AmbientProduct, DiffuseProduct, SpecularProduct;
 uniform float Shininess;
 uniform int Shading_Mode;
-
+uniform sampler2D tex;
+uniform int TextureFlag;
+uniform int Drawing_Type;
 out vec4 fcolor;
 
 void main()
 {
      if (Shading_Mode == 0) { //Gouraud
-         fcolor = color;
+         if (TextureFlag == 1)
+             //sample a texture color from texture object
+             fcolor = texture(tex, texCoord);
+
+         else fcolor = color;
      }
      else if (Shading_Mode == 1) {
+         if (TextureFlag == 1)
+             //sample a texture color from texture object
+             fcolor = texture(tex, texCoord);
+
+         else fcolor = color;
          // Normalize the input lighting vectors
          vec3 N = normalize(fN);
          vec3 V = normalize(fV);

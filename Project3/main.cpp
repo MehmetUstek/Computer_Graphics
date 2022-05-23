@@ -14,9 +14,14 @@ enum {
     PHONG = 1,
     MODIFIED_PHONG = 2
 };
+enum {
+    WIREFRAME=0,
+    SHADING=1,
+    TEXTURE=2
+};
 // Initial object -> cube, then with mouse click, sphere, and then bunny.
 ObjectType object_type = ObjectType::SPHERE;
-DrawingType drawing_type = DrawingType::SHADING;
+int drawing_type = SHADING;
 int shading_mode = GOURAUD;
 // Window sizes:
 GLsizei width = 760;
@@ -27,9 +32,13 @@ float projection_constant = 1.0f;
 const float velocityConst = 0.001;
 bool lighting = true;
 bool isFixed = false;
-float  material_shininess;
+bool ambientFlag = true;
+bool diffuseFlag = true;
+bool specularFlag = true;
+
+GLubyte* image;
+GLubyte* image2;
 GLubyte basketball[512][256][3];
-GLubyte* image, image2;
 const int  TextureSizeX = 512;
 const int TextureSizeY = 256;
 
@@ -59,8 +68,9 @@ typedef Angel::vec4 color4;
 
 
 point4 points_sphere[NumVertices_sphere];
+color4  quad_colors[NumVertices_sphere];
+vec2    tex_coords[NumVertices_sphere];
 int Index_sphere = 0;
-GLuint sphere_indices[NumVertices_sphere];
 float scale = 1.0f;
 GLfloat widthRatio = 1.0;
 GLfloat heightRatio = 1.0;
@@ -97,9 +107,10 @@ GLuint textures[2];
 //    file.close();
 //}
 
-void
-readPPM() {
+GLubyte*
+readPPM(const char* filename) {
     int n, m;
+    GLubyte* image;
     FILE* fd;
     int k, nm;
     char c;
@@ -107,9 +118,7 @@ readPPM() {
     char b[100];
     float s;
     int red, green, blue;
-    printf("enter file name\n");
-    scanf("%s", b);
-    fd = fopen(b, "r");
+    fd = fopen(filename, "r");
     fscanf(fd, "%[^\n]", b);
     if (b[0] != 'P' || b[1] != '3') {
         printf("%s is not a PPM file!\n",b);
@@ -136,6 +145,7 @@ readPPM() {
         image[3 * nm - 3 * i + 1] = green;
         image[3 * nm - 3 * i + 2] = blue;
     }
+    return image;
     
 }
 
@@ -144,8 +154,19 @@ readPPM() {
 void
 triangle_sphere(const point4& a, const point4& b, const point4& c)
 {
-    vec3  normal = normalize(cross(b - a, c - b));
+    color4 colors[8] = {
+    color4(0.0, 0.0, 0.0, 1.0),  // black
+    color4(1.0, 0.0, 0.0, 1.0),  // red
+    color4(1.0, 1.0, 0.0, 1.0),  // yellow
+    color4(0.0, 1.0, 0.0, 1.0),  // green
+    color4(0.0, 0.0, 1.0, 1.0),  // blue
+    color4(1.0, 0.0, 1.0, 1.0),  // magenta
+    color4(0.5, 0.5, 0.5, 1.0),  // white
+    color4(1.0, 1.0, 1.0, 1.0)   // cyan
+    };
 
+    vec3  normal = normalize(cross(b - a, c - b));
+    //TODO: add quads and textures.
     normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = a; Index_sphere++;
     normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = b; Index_sphere++;
     normals_sphere[Index_sphere] = normal; points_sphere[Index_sphere] = c; Index_sphere++;
@@ -200,7 +221,50 @@ tetrahedron_sphere(int count)
 
 // Model-view and projection matrices uniform location
 GLuint  ModelView, Projection, vPosition, vNormal, vCoords, Shading_Mode, AmbientProduct, DiffuseProduct, SpecularProduct, Light1Position, Light2Position, Shininess, isLightSourceFixed;
-GLuint customTexture, program;
+GLuint customTexture, program, Drawing_Type;
+bool textureFlag = false; //enable texture mapping
+GLuint TextureFlagLoc; // texture flag uniform location
+vec4 zero = vec4(0, 0, 0, 0);
+
+
+int textureIndex = 0;
+void change_texture() {
+    textureIndex++;
+    if (textureIndex > 2) {
+        textureIndex = 0;
+        if (textureIndex = 0) {
+            glBindTexture(GL_TEXTURE_2D, textures[0]);
+            textureFlag = 1;
+            glUniform1i(TextureFlagLoc, textureFlag);
+        }
+        else if (textureIndex == 1) {
+            glBindTexture(GL_TEXTURE_2D, textures[1]);
+            textureFlag = 1;
+            glUniform1i(TextureFlagLoc, textureFlag);
+        }
+        else if (textureIndex == 2) {
+            textureFlag = 0;
+            glUniform1i(TextureFlagLoc, textureFlag);
+        }
+    }
+}
+
+// Initialize shader lighting parameters
+point4 light_position(0.0, 0.0, 2.0, 1.0); //point light source.
+color4 light_ambient(0.2, 0.2, 0.2, 1.0);
+color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
+color4 light_specular(1.0, 1.0, 1.0, 1.0);
+
+color4 material_ambient(1.0, 0.0, 1.0, 1.0);
+color4 material_diffuse(1.0, 0.8, 0.0, 1.0);
+color4 material_specular(1.0, 0.8, 0.0, 1.0);
+float material_shininess = 5.0;
+
+
+color4 ambient_product = light_ambient * material_ambient;
+color4 diffuse_product = light_diffuse * material_diffuse;
+color4 specular_product = light_specular * material_specular;
+
 
 //----------------------------------------------------------------------------
 void setProjection(void) {
@@ -213,7 +277,7 @@ void setProjection(void) {
 void
 init()
 {
-    readPPM();
+    
     tetrahedron_sphere(NumTimesToSubdivide); // Create sphere.
     
     objectLocation.initObjectLocation((-projection_constant + scale + 0.2)/5, (scale+0.3)/5, velocityConst, -2*velocityConst);
@@ -221,6 +285,8 @@ init()
     ///////////////////////
     // Texture
     // Initialize texture objects
+    image = readPPM("basketball.ppm");
+    image2 = readPPM("earth.ppm");
     glGenTextures(2, textures);
 
     glBindTexture(GL_TEXTURE_2D, textures[0]);
@@ -232,16 +298,17 @@ init()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //try here different alternatives
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //try here different alternatives
 
-    glBindTexture(GL_TEXTURE_2D, textures[1]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX_2, TextureSizeY_2, 0,
-        GL_RGB, GL_UNSIGNED_BYTE, image2);
+    change_texture();
+    //glBindTexture(GL_TEXTURE_2D, textures[1]);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX_2, TextureSizeY_2, 0,
+    //    GL_RGB, GL_UNSIGNED_BYTE, image2);
     //glGenerateMipmap(GL_TEXTURE_2D); // try also activating mipmaps for the second texture object
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-    glBindTexture(GL_TEXTURE_2D, textures[0]); //set current texture
+    //glBindTexture(GL_TEXTURE_2D, textures[0]); //set current texture
     ////////////////////////
     /////////////////////
 
@@ -256,39 +323,42 @@ init()
     glBindVertexArray(vao[1]);
     glGenBuffers(1, &buffer_sphere);
     glBindBuffer(GL_ARRAY_BUFFER, buffer_sphere);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere), NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere) + sizeof(quad_colors) + sizeof(tex_coords), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points_sphere), points_sphere);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere), sizeof(normals_sphere), normals_sphere);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere), sizeof(quad_colors), quad_colors);
+    glBufferSubData(GL_ARRAY_BUFFER, sizeof(points_sphere) + sizeof(normals_sphere)+ sizeof(quad_colors), sizeof(tex_coords), tex_coords);
 
-    GLuint vPosition1 = glGetAttribLocation(program, "vPosition");
-    glEnableVertexAttribArray(vPosition1);
-    glVertexAttribPointer(vPosition1, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-
-    GLuint vColor_sphere = glGetAttribLocation(program, "vColor");
-    glEnableVertexAttribArray(vColor_sphere);
-    glVertexAttribPointer(vColor_sphere, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
-
+    GLintptr offset = 0;
+    offset = 0;
+    GLuint vPosition = glGetAttribLocation(program, "vPosition");
+    glEnableVertexAttribArray(vPosition);
+    glVertexAttribPointer(vPosition, 4, GL_FLOAT, GL_FALSE, 0,
+        BUFFER_OFFSET(offset));
+    offset += sizeof(points_sphere);
 
     GLuint vNormal = glGetAttribLocation(program, "vNormal");
     glEnableVertexAttribArray(vNormal);
-    glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(points_sphere)));
+    glVertexAttribPointer(vNormal, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
+
+    offset += sizeof(normals_sphere);
+
+    GLuint vColor = glGetAttribLocation(program, "vColor");
+    glEnableVertexAttribArray(vColor);
+    glVertexAttribPointer(vColor, 4, GL_FLOAT, GL_FALSE, 0,
+        BUFFER_OFFSET(offset));
+    offset += sizeof(quad_colors);
+    
+
+    GLuint vTexCoord = glGetAttribLocation(program, "vTexCoord");
+    glEnableVertexAttribArray(vTexCoord);
+    glVertexAttribPointer(vTexCoord, 2, GL_FLOAT, GL_FALSE, 0,
+        BUFFER_OFFSET(offset));
 
 
-    // Initialize shader lighting parameters
-    point4 light_position(0.0, 0.0, 2.0, 1.0); //point light source.
-    color4 light_ambient(0.2, 0.2, 0.2, 1.0);
-    color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
-    color4 light_specular(1.0, 1.0, 1.0, 1.0);
+    
 
-    color4 material_ambient(1.0, 0.0, 1.0, 1.0);
-    color4 material_diffuse(1.0, 0.8, 0.0, 1.0);
-    color4 material_specular(1.0, 0.8, 0.0, 1.0);
-    material_shininess = 5.0;
-
-
-    color4 ambient_product = light_ambient * material_ambient;
-    color4 diffuse_product = light_diffuse * material_diffuse;
-    color4 specular_product = light_specular * material_specular;
+    
 
     glUniform4fv(glGetUniformLocation(program, "AmbientProduct"),
         1, ambient_product);
@@ -306,14 +376,19 @@ init()
 
     vCoords = glGetAttribLocation(program, "vCoords");
     Shading_Mode = glGetUniformLocation(program, "Shading_Mode");
+    Drawing_Type = glGetUniformLocation(program, "Drawing_Type");
     isLightSourceFixed = glGetUniformLocation(program, "isLightSourceFixed");
 
     glUniform1i(Shading_Mode, Shading_Mode);
+    glUniform1i(Drawing_Type, drawing_type);
     glUniform1i(isLightSourceFixed, isFixed);
 
     // Retrieve transformation uniform variable locations
     ModelView = glGetUniformLocation( program, "ModelView" );
     Projection = glGetUniformLocation( program, "Projection" );
+
+    TextureFlagLoc = glGetUniformLocation(program, "TextureFlag");
+    glUniform1i(TextureFlagLoc, textureFlag);
     
     
     setProjection();
@@ -359,10 +434,10 @@ display( void )
             sizeof(normals_sphere), normals_sphere);
         switch (drawing_type)
         {
-        case DrawingType::WIREFRAME:
+        case WIREFRAME:
             glDrawArrays(GL_LINE_LOOP, 0, NumVertices_sphere);
             break;
-        case DrawingType::SHADING:
+        case SHADING:
             if(lighting) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             else glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
             glDrawArrays(GL_TRIANGLES, 0, NumVertices_sphere);
@@ -422,28 +497,16 @@ keyboard( unsigned char key,int x, int y )
         break;
      // Colors ranging from black to white between the inputs from 1 to 8.
     case '1':
-        color = color4(0.0, 0.0, 0.0, 1.0);  // black
+        glBindTexture(GL_TEXTURE_2D, textures[0]);
         break;
+
     case '2':
-        color = color4(1.0, 0.0, 0.0, 1.0);  // red
+        glBindTexture(GL_TEXTURE_2D, textures[1]);
         break;
-    case '3':
-        color = color4(1.0, 1.0, 0.0, 1.0);  // yellow
-        break;
-    case '4':
-        color = color4(0.0, 1.0, 0.0, 1.0);  // green
-        break;
-    case '5':
-        color = color4(0.0, 0.0, 1.0, 1.0);  // blue
-        break;
-    case '6':
-        color = color4(1.0, 0.0, 1.0, 1.0);  // magenta
-        break;
-    case '7':
-        color = color4(1.0, 1.0, 1.0, 1.0);  // white
-        break;
-    case '8':
-        color = color4(0.0, 1.0, 1.0, 1.0);   // cyan
+    case 't':
+        if (textureFlag == true) textureFlag = false;
+        else textureFlag = true;
+        glUniform1i(TextureFlagLoc, textureFlag);
         break;
     }
     
@@ -500,9 +563,43 @@ void shadingMenu(int id) {
 }
 void componentMenu(int id) {
     switch (id) {
-    case 1:
+    case 1: // Specular
+        if (specularFlag) {
+            specular_product = zero;
+            specularFlag = false;
+        }
+        else {
+            specular_product = light_specular * material_specular;
+            specularFlag = true;
+        }
+        break;
+    case 2: // Diffuse
+        if (diffuseFlag) {
+            diffuse_product = zero;
+            diffuseFlag = false;
+        }
+        else {
+            diffuse_product = light_diffuse * material_diffuse;
+            diffuseFlag = true;
+        }
+        break;
+    case 3: // Ambient
+        if (ambientFlag) {
+            ambient_product = zero;
+            ambientFlag = false;
+        }
+        else {
+            ambient_product = light_ambient * material_ambient;
+            ambientFlag = true;
+        }
         break;
     }
+    glUniform4fv(glGetUniformLocation(program, "AmbientProduct"),
+        1, ambient_product);
+    glUniform4fv(glGetUniformLocation(program, "DiffuseProduct"),
+        1, diffuse_product);
+    glUniform4fv(glGetUniformLocation(program, "SpecularProduct"),
+        1, specular_product);
     glutPostRedisplay();
 }
 void materialProperty(int id) {
@@ -537,15 +634,16 @@ void lightSource(int id) {
 void displayMode(int id) {
     switch (id) {
     case 1:
-        drawing_type = DrawingType::WIREFRAME;
+        drawing_type = WIREFRAME;
         break;
     case 2:
-        drawing_type = DrawingType::SHADING;
+        drawing_type = SHADING;
         break;
     case 3:
-        drawing_type = DrawingType::TEXTURE;
+        drawing_type = TEXTURE;
         break;
     }
+    glUniform1i(Drawing_Type, drawing_type);
     glutPostRedisplay();
 }
 
