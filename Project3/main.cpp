@@ -272,14 +272,12 @@ tetrahedron_sphere(int count)
 // Model-view and projection matrices uniform location
 GLuint  ModelView, Projection, vPosition, vNormal, vCoords, Shading_Mode, AmbientProduct, DiffuseProduct, SpecularProduct, Light1Position, Light2Position, Shininess, isLightSourceFixed;
 GLuint customTexture, program, Drawing_Type, Texture_Type;
-bool textureFlag = false; //enable texture mapping
-GLuint TextureFlagLoc; // texture flag uniform location
 vec4 zero = vec4(0, 0, 0, 0);
 
 
 // Initialize shader lighting parameters
-point4 light_position(0.0, 0.0, -2.0, 1.0); //point light source. GOOD FOR DISPLAYING FIXED LIGHT SOURCE
-//point4 light_position(0.0, 0.0, 2.0, 1.0); // GOOD FOR DISPLAYING LIGHT SOURCE MOVING WITH OBJECT
+//point4 light_position(0.0, 0.0, -2.0, 1.0); //point light source. GOOD FOR DISPLAYING FIXED LIGHT SOURCE
+point4 light_position(0.0, 0.0, 2.0, 1.0); // GOOD FOR DISPLAYING LIGHT SOURCE MOVING WITH OBJECT
 color4 light_ambient(0.2, 0.2, 0.2, 1.0);
 color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
 color4 light_specular(1.0, 1.0, 1.0, 1.0);
@@ -438,8 +436,6 @@ init()
 
 
 
-
-
     glUniform4fv(glGetUniformLocation(program, "AmbientProduct"),
         1, ambient_product);
     glUniform4fv(glGetUniformLocation(program, "DiffuseProduct"),
@@ -467,8 +463,6 @@ init()
     ModelView = glGetUniformLocation( program, "ModelView" );
     Projection = glGetUniformLocation( program, "Projection" );
 
-    TextureFlagLoc = glGetUniformLocation(program, "TextureFlag");
-    glUniform1i(TextureFlagLoc, textureFlag);
     
     setProjection();
     
@@ -533,8 +527,8 @@ display( void )
 
         }
         
-        model_view = (Translate(displacement) * Scale(scale / 5, scale / 5, scale / 5)) * RotateY(Theta[Yaxis]);
-        //model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5)) * RotateZ(Theta[Zaxis]);
+        //model_view = (Translate(displacement) * Scale(scale / 5, scale / 5, scale / 5)) * RotateY(Theta[Yaxis]);
+        model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5)) * RotateZ(Theta[Zaxis]);
         break;
     case ObjectType::BUNNY:
         for (int i = 0; i < numVertices_bunny; i++) {
@@ -605,7 +599,9 @@ keyboard( unsigned char key,int x, int y )
         break;
     case 'h': case 'H':
         cout << "-h: Help:" << endl << "-q: Quit program" << endl << "-i: Initilization of the animation, starting from the top left corner" << endl;
-        cout << "Change object type with mouse Events:" << endl << " Left click for changing between the objects, starting from cube, then sphere and lastly the bunny" << endl << " The objects will circle back to cube after bunny" << endl;
+        cout << "Right click to open up the menu" << endl << "Allowed Actions:" << endl;
+        cout << "Gouraud-Phong-Modified Phong" << endl << "Textures for basketball and earth" << endl << "Material: Metallic and plastic" << endl << "Light source fixed or move with the object" << endl;
+        cout << "Sphere or bunny for shading" << endl;
         cout << "Change color with numpad actions from 1-8:" << endl;
         cout << "  1: Black" << endl << "  2: Red" << endl << "  3: Yellow" << endl << "  4: Green" << endl << "  5: Blue" << endl << "  6: Magenta" << endl << "  7: White" << endl << "  8: Cyan" << endl;
         break;
@@ -637,17 +633,6 @@ keyboard( unsigned char key,int x, int y )
         break;
     case '8':
         color = color4(0.0, 1.0, 1.0, 1.0);   // cyan
-        break;
-    case 'a':
-        glBindTexture(GL_TEXTURE_2D, textures[0]);
-        break;
-    case 'b':
-        glBindTexture(GL_TEXTURE_2D, textures[1]);
-        break;
-    case 't':
-        if (textureFlag == true) textureFlag = false;
-        else textureFlag = true;
-        glUniform1i(TextureFlagLoc, textureFlag);
         break;
     }
     
@@ -682,15 +667,15 @@ void timer( int p )
 
     };
     // GOOD FOR DISPLAYING MOVING WITH OBJECT.
-    Theta[Yaxis] += 0.5;
+    /*Theta[Yaxis] += 0.5;
     if (Theta[Yaxis] > 360.0) {
         Theta[Yaxis] -= 360.0;
-    }
-    // GOOD FOR FIXED LIGHTING.
-    //Theta[Zaxis] += 3;
-    /*if (Theta[Zaxis] > 360.0) {
-        Theta[Zaxis] -= 360.0;
     }*/
+    // GOOD FOR FIXED LIGHTING.
+    Theta[Zaxis] += 3;
+    if (Theta[Zaxis] > 360.0) {
+        Theta[Zaxis] -= 360.0;
+    }
     glutPostRedisplay();
     
     glutTimerFunc(2,timer,0);

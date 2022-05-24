@@ -10,7 +10,6 @@ uniform vec4 AmbientProduct, DiffuseProduct, SpecularProduct;
 uniform float Shininess;
 uniform int Shading_Mode;
 uniform sampler2D tex;
-uniform int TextureFlag;
 uniform int Drawing_Type;
 out vec4 fcolor;
 
@@ -18,19 +17,11 @@ void main()
 {
 
     if (Drawing_Type == 0) {
-        if (TextureFlag == 1)
-            //sample a texture color from texture object
-            fcolor = texture(tex, texCoord);
-
-        else fcolor = color;
+        fcolor = color;
     }
     else if (Drawing_Type == 1) { // Shading
         if (Shading_Mode == 0) { //Gouraud
-            if (TextureFlag == 1)
-                //sample a texture color from texture object
-                fcolor = texture(tex, texCoord);
-
-            else fcolor = color;
+            fcolor = color;
         }
         else if (Shading_Mode == 1) {
             //fcolor = color;

@@ -26,7 +26,6 @@ void main()
     
     if (Drawing_Type == 0) {
         color = vColor;
-        texCoord = vTexCoord;
         gl_Position = Projection * ModelView * vPosition;
     }
     else if (Drawing_Type == 1) { // Shading
