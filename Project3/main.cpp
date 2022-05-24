@@ -8,6 +8,10 @@
 #include "DrawingType.cpp"
 #include "ShadingMode.cpp"
 
+/// <summary>
+/// @author Mehmet N. Ustek
+/// Completeness of the project: All required cases are done. Bonus bunny part is also done.
+/// </summary>
 
 enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 GLfloat Theta[NumAxes] = { 0.0, 0.0, 0.0 };
@@ -192,7 +196,6 @@ vec2 calculate_u_v(point4 point) {
     point4 V = normalize(point);
     double r = scale;
     
-
     v = acos(V.z / r) / M_PI;
     u = acos(V.x / (r * sin(M_PI * (v)))) / (2 * M_PI);
     return vec2(u, v);
@@ -270,14 +273,14 @@ tetrahedron_sphere(int count)
 
 
 // Model-view and projection matrices uniform location
-GLuint  ModelView, Projection, vPosition, vNormal, vCoords, Shading_Mode, AmbientProduct, DiffuseProduct, SpecularProduct, Light1Position, Light2Position, Shininess, isLightSourceFixed;
+GLuint  ModelView, Projection, vPosition, vNormal, Shading_Mode, isLightSourceFixed;
 GLuint customTexture, program, Drawing_Type, Texture_Type;
 vec4 zero = vec4(0, 0, 0, 0);
 
 
 // Initialize shader lighting parameters
-//point4 light_position(0.0, 0.0, -2.0, 1.0); //point light source. GOOD FOR DISPLAYING FIXED LIGHT SOURCE
-point4 light_position(0.0, 0.0, 2.0, 1.0); // GOOD FOR DISPLAYING LIGHT SOURCE MOVING WITH OBJECT
+point4 light_position(0.0, 0.0, -2.0, 1.0); //point light source. GOOD FOR DISPLAYING FIXED LIGHT SOURCE
+//point4 light_position(0.0, 0.0, 2.0, 1.0); // GOOD FOR DISPLAYING LIGHT SOURCE MOVING WITH OBJECT
 color4 light_ambient(0.2, 0.2, 0.2, 1.0);
 color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
 color4 light_specular(1.0, 1.0, 1.0, 1.0);
@@ -477,9 +480,6 @@ init()
     glClearColor( 1.0, 1.0, 1.0, 1.0 );
    }
 
-//----------------------------------------------------------------------------
-
-
 void
 display( void )
 {
@@ -574,11 +574,6 @@ display( void )
     
 }
 
-//---------------------------------------------------------------------
-//
-// reshape
-//
-
 void reshape( int w, int h )
 {
     glViewport( 0, 0, w, h );
@@ -587,8 +582,6 @@ void reshape( int w, int h )
     heightRatio = (GLfloat)h / 760;
 }
 
-
-//----------------------------------------------------------------------------
 
 void
 keyboard( unsigned char key,int x, int y )
@@ -636,10 +629,7 @@ keyboard( unsigned char key,int x, int y )
         break;
     }
     
-    
 }
-
-//----------------------------------------------------------------------------
 
 void mouse( int button, int state, int x, int y )
 {
@@ -652,7 +642,6 @@ void mouse( int button, int state, int x, int y )
     }
 }
 
-//----------------------------------------------------------------------------
 void timer( int p )
 {
     // Update the object location at each time passed. The radius are updated since there can be change in object types and objects do not have the same scale.
@@ -861,12 +850,6 @@ void glutMenu() {
     glutAddSubMenu("Texture Type", texture_menu_type);
     glutAddSubMenu("Object Type", object_menu_type);
     
-    
-    
-
-
-    //glutCreateMenu(menuStart);
-    //glutAddMenuEntry
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
