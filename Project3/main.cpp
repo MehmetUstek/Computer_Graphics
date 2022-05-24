@@ -190,18 +190,11 @@ readPPM(const char* filename) {
 vec2 calculate_u_v(point4 point) {
     GLfloat u, v;
     point4 V = normalize(point);
-    double r = scale / 5;
-
-    if (texture_type == BASKETBALL)
-        r /= TextureSizeY;
-    else if (texture_type == EARTH)
-        r /= TextureSizeY_2;
+    double r = scale;
+    
 
     v = acos(V.z / r) / M_PI;
-    if (V.y > 0)
-        u = acos(V.x / (r * sin(M_PI * (v)))) / (2 * M_PI);
-    else
-        u = (M_PI + acos(V.x / (r * sin(M_PI * (v))))) / (2 * M_PI);
+    u = acos(V.x / (r * sin(M_PI * (v)))) / (2 * M_PI);
     return vec2(u, v);
 }
 
@@ -329,14 +322,20 @@ init()
     image2 = readPPM("earth.ppm");
     glGenTextures(2, textures);
 
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, textures[0]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX, TextureSizeY, 0,
         GL_RGB, GL_UNSIGNED_BYTE, image);
     glGenerateMipmap(GL_TEXTURE_2D);
+
+
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //try here different alternatives
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); //try here different alternatives
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //try here different alternatives
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST); //try here different alternatives
+    // enable automatic texture coordinate generation
+    
+
 
     glBindTexture(GL_TEXTURE_2D, textures[1]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TextureSizeX_2, TextureSizeY_2, 0,
@@ -454,8 +453,6 @@ init()
     glUniform1f(glGetUniformLocation(program, "Shininess"),
         material_shininess);
 
-
-    vCoords = glGetAttribLocation(program, "vCoords");
     Shading_Mode = glGetUniformLocation(program, "Shading_Mode");
     Drawing_Type = glGetUniformLocation(program, "Drawing_Type");
     Texture_Type = glGetUniformLocation(program, "Texture_Type");

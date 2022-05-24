@@ -86,6 +86,8 @@ void main()
     }
     else if (Drawing_Type == 2) {
         fcolor = texture(tex, texCoord);
+        fcolor.a = 1.0;
+        //fcolor = vec4(0.5f, 0.5f, 1.0f, 1.0f);
 
     }
 }
