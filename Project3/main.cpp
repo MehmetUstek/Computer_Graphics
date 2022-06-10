@@ -16,121 +16,6 @@
 enum { Xaxis = 0, Yaxis = 1, Zaxis = 2, NumAxes = 3 };
 GLfloat Theta[NumAxes] = { 0.0, 0.0, 0.0 };
 
-auto ParametricHalfCircle = [](double t)
-{
-    // [0, 1]
-    t -= 0.5;
-    // [-0.5, 0.5]
-    t *= M_PI;
-    // [-PI*0.5, PI*0.5]
-    return vec2(cos(t), sin(t));
-};
-
-auto ParametricCircle = [](double t)
-{
-    // [0, 1]
-    //t -= 0.5;
-    // [-0.5, 0.5]
-    t *= 2* M_PI;
-    // [-PI, PI]
-
-    //glm::dvec2 c(0.5, 0);
-    auto c = vec2(0.7, 0);
-    double r = 0.25;
-
-    return vec2(cos(t), sin(t)) * r + c;
-};
-
-auto ParametricSpikes = [](double t)
-{
-    // [0, 1]
-    t -= 0.5;
-    // [-0.5, 0.5]
-    t *= M_PI*2;
-    // [-PI, PI]
-
-    auto c = vec2(0.7, 0);
-    double r = 0.25;
-
-    int a = 2 + 4 * 4;
-    return (vec2(cos(t) + sin(a * t) / a, sin(t) + cos(a * t) / a) / 2.) * r + c;
-};
-
-auto ParametricSpikyCircle = [](double t)
-{
-    t *= M_PI*2;
-
-   vec2 c(0.6, 0);
-    double r = 0.35;
-    int a = 1 + 2 * 6;
-
-    return vec2(cos(t) + sin(a * t) / a, sin(t) + cos(a * t) / a) * r + c;
-};
-
-void GenerateParametricShape(
-    std::vector<vec3>& positions,
-    std::vector<vec3>& normals,
-    std::vector<GLuint>& indices,
-    vec2(*parametric_line)(double),
-    int vertical_segments,
-    int rotation_segments
-)
-{
-    auto parametric_surface = [parametric_line](double t, double r)
-    {
-        auto p = vec3(parametric_line(t), 0);
-
-        //auto s = sin(r * glm::two_pi<double>() * 6) / 2 + 1;
-        //qp *= s * 0.3; //makes bigger
-        //p.y *= sin(r * glm::two_pi<double>() * 3) / 2 + 1;
-        return glm::rotateY(p, r * glm::two_pi<double>());
-    };
-
-    //vertices are calculated by this resolution
-    positions.reserve(vertical_segments * rotation_segments);
-    for (int r = 0; r < rotation_segments; ++r)
-        for (int v = 0; v < vertical_segments; ++v)
-            positions.push_back(parametric_surface(v / double(vertical_segments - 1), r / double(rotation_segments)));
-
-    normals.reserve(vertical_segments * rotation_segments);
-    for (int r = 0; r < rotation_segments; ++r)
-        for (int v = 0; v < vertical_segments; ++v)
-        {
-            auto nv = v / double(vertical_segments - 1);
-            auto nr = r / double(rotation_segments);
-
-            auto epsilonv = 1 / double(vertical_segments - 1);
-            auto epsilonr = 1 / double(rotation_segments);
-
-            auto to_next_v = parametric_surface(nv + epsilonv, nr) - parametric_surface(nv, nr);
-            auto from_prev_v = parametric_surface(nv, nr) - parametric_surface(nv - epsilonv, nr);
-            auto tangent_v = (to_next_v + from_prev_v) / 2.; //take average
-
-            auto to_next_r = parametric_surface(nv, nr + epsilonr) - parametric_surface(nv, nr);
-            auto from_prev_r = parametric_surface(nv, nr) - parametric_surface(nv, nr - epsilonr);
-            auto tangent_r = (to_next_r + from_prev_r) / 2.; //take average
-
-            auto normal = glm::normalize(glm::cross(tangent_r, tangent_v));
-            normals.push_back(normal);
-        }
-
-    auto VRtoIndex = [vertical_segments, rotation_segments](int v, int r) //2D to 1D map
-    {
-        return (r % rotation_segments) * vertical_segments + v;
-    };
-    indices.reserve(rotation_segments * (vertical_segments - 1) * 6);
-    for (int r = 0; r < rotation_segments; ++r)
-        for (int v = 0; v < vertical_segments - 1; ++v)
-        {
-            indices.push_back(VRtoIndex(v + 1, r));
-            indices.push_back(VRtoIndex(v, r + 1));
-            indices.push_back(VRtoIndex(v, r));
-
-            indices.push_back(VRtoIndex(v + 1, r));
-            indices.push_back(VRtoIndex(v + 1, r + 1));
-            indices.push_back(VRtoIndex(v, r + 1));
-        }
-}
 enum {
     GOURAUD = 0,
     PHONG = 1,
@@ -394,8 +279,8 @@ vec4 zero = vec4(0, 0, 0, 0);
 
 
 // Initialize shader lighting parameters
-//point4 light_position(0.0, 0.0, -2.0, 1.0); //point light source. GOOD FOR DISPLAYING FIXED LIGHT SOURCE
-point4 light_position(0.0, 0.0, 2.0, 1.0); // GOOD FOR DISPLAYING LIGHT SOURCE MOVING WITH OBJECT
+point4 light_position(0.0, 0.0, -2.0, 1.0); //point light source. GOOD FOR DISPLAYING FIXED LIGHT SOURCE
+//point4 light_position(0.0, 0.0, 2.0, 1.0); // GOOD FOR DISPLAYING LIGHT SOURCE MOVING WITH OBJECT
 color4 light_ambient(0.2, 0.2, 0.2, 1.0);
 color4 light_diffuse(1.0, 1.0, 1.0, 1.0);
 color4 light_specular(1.0, 1.0, 1.0, 1.0);
@@ -642,8 +527,8 @@ display( void )
 
         }
         
-        model_view = (Translate(displacement) * Scale(scale / 5, scale / 5, scale / 5)) * RotateY(Theta[Yaxis]);
-        //model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5)) * RotateZ(Theta[Zaxis]);
+        //model_view = (Translate(displacement) * Scale(scale / 5, scale / 5, scale / 5)) * RotateY(Theta[Yaxis]);
+        model_view = (Translate(displacement) * Scale(scale/5, scale/5, scale/5)) * RotateZ(Theta[Zaxis]);
         break;
     case ObjectType::BUNNY:
         for (int i = 0; i < numVertices_bunny; i++) {
@@ -771,15 +656,15 @@ void timer( int p )
 
     };
     // GOOD FOR DISPLAYING MOVING WITH OBJECT.
-    Theta[Yaxis] += 0.5;
+    /*Theta[Yaxis] += 0.5;
     if (Theta[Yaxis] > 360.0) {
         Theta[Yaxis] -= 360.0;
-    }
+    }*/
     // GOOD FOR FIXED LIGHTING.
-    /*Theta[Zaxis] += 3;
+    Theta[Zaxis] += 3;
     if (Theta[Zaxis] > 360.0) {
         Theta[Zaxis] -= 360.0;
-    }*/
+    }
     glutPostRedisplay();
     
     glutTimerFunc(2,timer,0);
